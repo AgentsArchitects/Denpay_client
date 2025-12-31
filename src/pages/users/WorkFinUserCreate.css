@@ -1,0 +1,158 @@
+.workfin-user-create-container {
+  padding: 24px;
+  background: #F9FAFB;
+  min-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Breadcrumb */
+.page-breadcrumb {
+  margin-bottom: 16px;
+  width: 100%;
+  max-width: 800px;
+}
+
+.page-breadcrumb a {
+  color: #6B7280;
+  transition: color 0.2s ease;
+}
+
+.page-breadcrumb a:hover {
+  color: #22C55E;
+}
+
+/* Page Header */
+.page-header {
+  margin-bottom: 24px;
+  width: 100%;
+  max-width: 800px;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1F2937;
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Card */
+.workfin-user-create-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: none;
+  width: 100%;
+  max-width: 800px;
+}
+
+.workfin-user-create-card .ant-card-body {
+  padding: 32px;
+}
+
+/* Form */
+.workfin-user-create-card .ant-form-item-label > label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 14px;
+}
+
+.form-input {
+  height: 44px;
+  border-radius: 6px;
+  border-color: #D1D5DB;
+  font-size: 15px;
+}
+
+.form-input:hover,
+.form-input:focus {
+  border-color: #6366F1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+/* Roles Section */
+.roles-section {
+  margin-top: 24px;
+}
+
+.role-checkbox {
+  font-size: 15px;
+  color: #1F2937;
+  padding: 12px;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.role-checkbox:hover {
+  background: #F9FAFB;
+}
+
+.role-checkbox .ant-checkbox-inner {
+  width: 18px;
+  height: 18px;
+  border-color: #D1D5DB;
+}
+
+.role-checkbox .ant-checkbox-checked .ant-checkbox-inner {
+  background-color: #6366F1;
+  border-color: #6366F1;
+}
+
+.role-checkbox .ant-checkbox-checked::after {
+  border-color: #6366F1;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.cancel-btn {
+  height: 40px;
+  padding: 0 24px;
+  border-radius: 6px;
+  font-weight: 500;
+  border-color: #D1D5DB;
+  color: #374151;
+}
+
+.cancel-btn:hover {
+  border-color: #9CA3AF;
+  color: #1F2937;
+}
+
+.submit-btn {
+  height: 40px;
+  padding: 0 32px;
+  border-radius: 6px;
+  font-weight: 500;
+  background: #1F2937;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.submit-btn:hover {
+  background: #374151;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .workfin-user-create-card {
+    max-width: 100%;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .cancel-btn,
+  .submit-btn {
+    width: 100%;
+  }
+}

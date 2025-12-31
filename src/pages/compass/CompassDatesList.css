@@ -1,0 +1,143 @@
+.compass-dates-container {
+  padding: 24px;
+  background: #F9FAFB;
+  min-height: calc(100vh - 64px);
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* Breadcrumb */
+.page-breadcrumb {
+  margin-bottom: 16px;
+}
+
+.page-breadcrumb a {
+  color: #6B7280;
+  transition: color 0.2s ease;
+}
+
+.page-breadcrumb a:hover {
+  color: #22C55E;
+}
+
+/* Page Header */
+.page-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1F2937;
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+.compass-dates-container .header-actions {
+  position: fixed;
+  right: 40px;
+  top: 120px;
+  z-index: 100;
+}
+
+.add-new-btn {
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 13px;
+  background: #22C55E;
+  border: none;
+  box-shadow: 0 2px 4px rgba(34, 197, 94, 0.2);
+  white-space: nowrap;
+}
+
+.add-new-btn:hover {
+  background: #16A34A;
+}
+
+/* Card */
+.compass-dates-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: none;
+}
+
+.compass-dates-card .ant-card-body {
+  padding: 24px;
+}
+
+/* Table */
+.compass-dates-card .ant-table {
+  font-size: 14px;
+}
+
+.compass-dates-card .ant-table-thead > tr > th {
+  background: #F9FAFB;
+  color: #6B7280;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #E5E7EB;
+  white-space: nowrap;
+}
+
+.compass-dates-card .ant-table-tbody > tr:hover > td {
+  background: #F9FAFB;
+}
+
+.status-tag {
+  border-radius: 12px;
+  padding: 2px 12px;
+  font-weight: 500;
+  font-size: 12px;
+  border: none;
+}
+
+.action-btn {
+  color: #6B7280;
+  transition: all 0.2s ease;
+}
+
+.action-btn.edit-btn:hover {
+  color: #6366F1;
+  background: rgba(99, 102, 241, 0.1);
+}
+
+/* Pagination */
+.compass-dates-card .ant-pagination {
+  margin-top: 24px;
+}
+
+.compass-dates-card .ant-pagination-item-active {
+  border-color: #6366F1;
+  background: #6366F1;
+}
+
+.compass-dates-card .ant-pagination-item-active a {
+  color: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .compass-dates-container .header-actions {
+    position: relative;
+    right: auto;
+    top: auto;
+    width: 100%;
+  }
+
+  .add-new-btn {
+    width: 100%;
+  }
+}

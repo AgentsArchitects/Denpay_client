@@ -1,0 +1,228 @@
+.client-onboarding-container {
+  padding: 24px;
+  background: #F9FAFB;
+  min-height: calc(100vh - 64px);
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* Breadcrumb */
+.page-breadcrumb {
+  margin-bottom: 16px;
+}
+
+.page-breadcrumb a {
+  color: #6B7280;
+  transition: color 0.2s ease;
+}
+
+.page-breadcrumb a:hover {
+  color: #22C55E;
+}
+
+/* Page Header */
+.page-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1F2937;
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+.client-onboarding-container .header-actions {
+  position: fixed;
+  right: 40px;
+  top: 120px;
+  z-index: 100;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.search-input {
+  border-radius: 6px;
+  height: 32px;
+  width: 200px;
+}
+
+.search-input:focus,
+.search-input:hover {
+  border-color: #6366F1;
+}
+
+.add-client-btn {
+  background: #22C55E;
+  border: none;
+  height: 32px;
+  padding: 0 16px;
+  font-weight: 500;
+  font-size: 13px;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(34, 197, 94, 0.2);
+  white-space: nowrap;
+}
+
+.add-client-btn:hover {
+  background: #16A34A;
+}
+
+/* Card */
+.client-onboarding-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: none;
+}
+
+.client-onboarding-card .ant-card-body {
+  padding: 0;
+}
+
+/* Tab */
+.client-tab {
+  padding: 16px 24px;
+  border-bottom: 2px solid #E5E7EB;
+}
+
+.tab-item {
+  font-size: 15px;
+  font-weight: 500;
+  color: #374151;
+  padding-bottom: 16px;
+  position: relative;
+}
+
+.tab-item.active {
+  color: #22C55E;
+}
+
+.tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #22C55E;
+}
+
+.tab-count {
+  background: #1F2937;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+/* Table */
+.client-onboarding-card .ant-table {
+  padding: 0;
+}
+
+.client-onboarding-card .ant-table-thead > tr > th {
+  background: #FAFAFA;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #E5E7EB;
+}
+
+.client-onboarding-card .ant-table-tbody > tr:hover > td {
+  background: #F9FAFB;
+}
+
+/* Client Name Link */
+.client-name-link {
+  color: #6366F1;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.client-name-link:hover {
+  color: #22C55E;
+  text-decoration: underline;
+}
+
+/* Status Tag */
+.status-tag {
+  border-radius: 6px;
+  font-weight: 500;
+  padding: 4px 12px;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.action-btn {
+  font-size: 18px;
+  transition: all 0.2s ease;
+}
+
+.user-btn {
+  color: #6366F1;
+}
+
+.user-btn:hover {
+  color: #22C55E;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.edit-btn {
+  color: #6B7280;
+}
+
+.edit-btn:hover {
+  color: #22C55E;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.delete-btn {
+  color: #EF4444;
+}
+
+.delete-btn:hover {
+  color: #DC2626;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Pagination */
+.client-onboarding-card .ant-table-pagination {
+  padding: 16px 24px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .client-onboarding-container .header-actions {
+    position: relative;
+    right: auto;
+    top: auto;
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .add-client-btn {
+    width: 100%;
+  }
+}

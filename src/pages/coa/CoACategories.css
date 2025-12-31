@@ -1,0 +1,141 @@
+.coa-categories-container {
+  padding: 24px;
+  background: #F9FAFB;
+  min-height: calc(100vh - 64px);
+}
+
+/* Breadcrumb */
+.page-breadcrumb {
+  margin-bottom: 16px;
+}
+
+.page-breadcrumb a {
+  color: #6B7280;
+  transition: color 0.2s ease;
+}
+
+.page-breadcrumb a:hover {
+  color: #22C55E;
+}
+
+/* Page Header */
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1F2937;
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Card */
+.coa-categories-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: none;
+}
+
+.coa-categories-card .ant-card-body {
+  padding: 0;
+}
+
+/* Table Toolbar */
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: #FAFAFA;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.search-input {
+  border-radius: 6px;
+}
+
+.search-input:focus,
+.search-input:hover {
+  border-color: #6366F1;
+}
+
+.action-dots-btn {
+  font-size: 20px;
+  color: #6B7280;
+  transition: all 0.2s ease;
+}
+
+.action-dots-btn:hover {
+  color: #22C55E;
+  background: #F9FAFB;
+}
+
+.row-action-btn {
+  font-size: 18px;
+  color: #6B7280;
+  transition: all 0.2s ease;
+}
+
+.row-action-btn:hover {
+  color: #22C55E;
+}
+
+/* Table */
+.coa-categories-card .ant-table {
+  padding: 0;
+}
+
+.coa-categories-card .ant-table-thead > tr > th {
+  background: #FAFAFA;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #E5E7EB;
+}
+
+.coa-categories-card .ant-table-tbody > tr:hover > td {
+  background: #F9FAFB;
+}
+
+/* CoA Name Link */
+.coa-name-link {
+  color: #6366F1;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.coa-name-link:hover {
+  color: #22C55E;
+  text-decoration: underline;
+}
+
+/* Pagination */
+.coa-categories-card .ant-table-pagination {
+  padding: 16px 24px;
+}
+
+/* Checkboxes */
+.coa-categories-card .ant-checkbox-checked .ant-checkbox-inner {
+  background-color: #6366F1;
+  border-color: #6366F1;
+}
+
+.coa-categories-card .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.coa-categories-card .ant-checkbox:hover .ant-checkbox-inner {
+  border-color: #6366F1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .table-toolbar {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+}
