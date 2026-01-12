@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { Card, Table, Input, Button, Breadcrumb, Tag } from 'antd';
-import { SearchOutlined, PlusOutlined, UserOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
+import { Card, Table, Input, Button, Breadcrumb, Tag, message, Modal } from 'antd';
+import { SearchOutlined, PlusOutlined, UserOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { Link, useNavigate } from 'react-router-dom';
+import clientService from '../../services/clientService';
 import './ClientOnboardingList.css';
 
 interface ClientData {
@@ -13,8 +14,79 @@ interface ClientData {
   status: 'Active' | 'Inactive';
 }
 
+interface ClientFromAPI {
+  id: string;
+  legal_trading_name: string;
+  workfin_reference: string;
+  status: string;
+  contact_email: string;
+  contact_phone: string;
+  client_type: string | null;
+  created_at: string;
+}
+
 const ClientOnboardingList: React.FC = () => {
   const navigate = useNavigate();
+  const [clients, setClients] = useState<ClientData[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  // Fetch clients from database
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const fetchClients = async () => {
+    try {
+      setLoading(true);
+      const response = await clientService.getClients() as any;
+
+      // Transform API response to match table data structure
+      const transformedData: ClientData[] = response.map((client: ClientFromAPI) => ({
+        key: client.id,
+        tradingName: client.legal_trading_name,
+        entityReference: client.workfin_reference,
+        date: formatDate(client.created_at),
+        status: client.status as 'Active' | 'Inactive'
+      }));
+
+      setClients(transformedData);
+    } catch (error: any) {
+      console.error('Failed to fetch clients:', error);
+      message.error('Failed to load clients. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const handleDelete = (clientId: string, clientName: string) => {
+    Modal.confirm({
+      title: 'Delete Client',
+      icon: <ExclamationCircleOutlined />,
+      content: `Are you sure you want to delete "${clientName}"? This action cannot be undone.`,
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          await clientService.deleteClient(clientId);
+          message.success('Client deleted successfully');
+          // Refresh the client list
+          fetchClients();
+        } catch (error: any) {
+          console.error('Failed to delete client:', error);
+          message.error('Failed to delete client. Please try again.');
+        }
+      }
+    });
+  };
 
   const columns: ColumnsType<ClientData> = [
     {
@@ -66,20 +138,11 @@ const ClientOnboardingList: React.FC = () => {
             type="text"
             icon={<DeleteOutlined />}
             className="action-btn delete-btn"
+            onClick={() => handleDelete(record.key, record.tradingName)}
           />
         </div>
       ),
     },
-  ];
-
-  const data: ClientData[] = [
-    { key: '1', tradingName: 'Dental Care', entityReference: 'DEN2237', date: '24/12/2025', status: 'Active' },
-    { key: '2', tradingName: 'SIXSIGMA Hospital', entityReference: 'SIX3390', date: '24/12/2025', status: 'Active' },
-    { key: '3', tradingName: 'Horizon Hospital', entityReference: 'HOR8377', date: '24/12/2025', status: 'Active' },
-    { key: '4', tradingName: 'Bright Orthodontics Ltd', entityReference: 'BRI7081', date: '18/11/2025', status: 'Active' },
-    { key: '5', tradingName: 'Six Sigma Hospital', entityReference: 'SIX7216', date: '12/11/2025', status: 'Active' },
-    { key: '6', tradingName: 'Umega Textiles', entityReference: 'UME8890', date: '12/11/2025', status: 'Active' },
-    { key: '7', tradingName: 'ESK Healthcare Group Ltd', entityReference: 'ESK8603', date: '22/08/2025', status: 'Active' },
   ];
 
   return (
@@ -121,13 +184,14 @@ const ClientOnboardingList: React.FC = () => {
       <Card className="client-onboarding-card">
         {/* Tab */}
         <div className="client-tab">
-          <span className="tab-item active">All <span className="tab-count">{data.length}</span></span>
+          <span className="tab-item active">All <span className="tab-count">{clients.length}</span></span>
         </div>
 
         {/* Table */}
         <Table
           columns={columns}
-          dataSource={data}
+          dataSource={clients}
+          loading={loading}
           pagination={{
             pageSize: 10,
             showSizeChanger: true,

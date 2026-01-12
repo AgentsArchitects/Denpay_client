@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Form, Input, Button, Breadcrumb, Select, Upload, Tabs, DatePicker, Switch } from 'antd';
+import { Card, Form, Input, Button, Breadcrumb, Select, Upload, Tabs, DatePicker, Switch, message } from 'antd';
 import { UploadOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { UploadFile } from 'antd/es/upload/interface';
+import clientService from '../../services/clientService';
 import './ClientOnboardingCreate.css';
 
 const { Option } = Select;
@@ -54,10 +55,30 @@ const ClientOnboardingCreate: React.FC = () => {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const currentTabIndex = parseInt(activeTab);
-    if (currentTabIndex < 10) {
-      setActiveTab(String(currentTabIndex + 1));
+
+    // Validate current tab before moving to next
+    try {
+      if (currentTabIndex === 1) {
+        // Tab 1: Client Information - validate required fields
+        await form.validateFields(['type', 'tradingName', 'addressLine1', 'city', 'postCode']);
+      } else if (currentTabIndex === 2) {
+        // Tab 2: Contact Information - validate required fields
+        await contactForm.validateFields(['phoneNumber', 'emailId', 'adminUserFullName', 'adminUserEmail']);
+      }
+      // Other tabs don't have mandatory fields, so we don't need to validate them
+
+      // If validation passes, move to next tab
+      if (currentTabIndex < 10) {
+        setActiveTab(String(currentTabIndex + 1));
+      } else {
+        // Last tab - submit the form
+        handleSubmit();
+      }
+    } catch (error) {
+      // Validation failed - show error message
+      message.error('Please fill in all required fields before continuing');
     }
   };
 
@@ -92,6 +113,178 @@ const ClientOnboardingCreate: React.FC = () => {
 
   const handleAddFyEndPeriod = () => {
     setFyEndPeriods([...fyEndPeriods, fyEndPeriods.length]);
+  };
+
+  const handleSubmit = async () => {
+    // Declare payload outside try block for error logging
+    let payload: any = null;
+
+    try {
+      // Validate required forms
+      await Promise.all([
+        form.validateFields(),
+        contactForm.validateFields(),
+      ]);
+
+      // Gather all form values
+      const clientInfo = form.getFieldsValue();
+      const contactInfo = contactForm.getFieldsValue();
+      const licenseInfo = licenseForm.getFieldsValue();
+      const accountantInfo = accountantForm.getFieldsValue();
+      const itProviderInfo = itProviderForm.getFieldsValue();
+      const denpayValues = denpayForm.getFieldsValue();
+      const fyEndValues = fyEndForm.getFieldsValue();
+
+      // Build API request payload
+      payload = {
+        // Tab 1: Client Information
+        legal_client_trading_name: clientInfo.tradingName,
+        workfin_legal_entity_reference: clientInfo.entityReference || `REF-${Date.now()}`,
+        client_type: clientInfo.type || null,
+        company_registration: clientInfo.companyRegNo || null,
+        xero_vat_type: clientInfo.xeroVatTaxType || null,
+        expanded_logo_url: null, // TODO: Implement file upload
+        logo_url: null, // TODO: Implement file upload
+
+        // Address (nested object)
+        address: {
+          line1: clientInfo.addressLine1,
+          line2: clientInfo.addressLine2 || null,
+          city: clientInfo.city,
+          county: clientInfo.county || null,
+          postcode: clientInfo.postCode,
+          country: clientInfo.country || 'United Kingdom'
+        },
+
+        // Tab 2: Contact Information
+        phone: contactInfo.phoneNumber,
+        email: contactInfo.emailId,
+        admin_user: {
+          name: contactInfo.adminUserFullName,
+          email: contactInfo.adminUserEmail
+        },
+
+        // Tab 3: License Information
+        accounting_system: licenseInfo.accountingSystem || null,
+        xero_app: licenseInfo.xeroApp || null,
+        workfin_users_count: parseInt(licenseInfo.licenseWorkfinUsers) || 0,
+        compass_connections_count: parseInt(licenseInfo.licenseCompassConnections) || 0,
+        finance_system_connections_count: parseInt(licenseInfo.licenseFinanceSystemConnections) || 0,
+        pms_connections_count: parseInt(licenseInfo.licensePracticeManagementConnections) || 0,
+        purchasing_system_connections_count: parseInt(licenseInfo.licensePurchasingSystemConnections) || 0,
+
+        // Tab 4: Accountant Details
+        accountant_name: accountantInfo.accountantName || null,
+        accountant_address: accountantInfo.accountantAddress || null,
+        accountant_contact: accountantInfo.accountantContactNo || null,
+        accountant_email: accountantInfo.accountantEmail || null,
+
+        // Tab 5: IT Provider Details
+        it_provider_name: itProviderInfo.nameOfProvider || null,
+        it_provider_address: itProviderInfo.address || null,
+        it_provider_postcode: itProviderInfo.postCode || null,
+        it_provider_contact_name: itProviderInfo.contactName || null,
+        it_provider_phone_1: itProviderInfo.telephoneNo || null,
+        it_provider_phone_2: itProviderInfo.telephoneNo1 || null,
+        it_provider_email: itProviderInfo.email || null,
+        it_provider_notes: itProviderInfo.additionalNotes || null,
+
+        // Tab 6: Adjustment Types
+        adjustment_types: adjustmentTypes.map(name => ({ name })),
+
+        // Tab 7: PMS Integration Details (empty for now)
+        pms_integrations: [],
+
+        // Tab 8: Denpay Period
+        denpay_periods: denpayPeriods
+          .map((_, index) => {
+            const month = denpayValues[`denpay_month_${index}`];
+            const from = denpayValues[`denpay_from_${index}`];
+            const to = denpayValues[`denpay_to_${index}`];
+
+            if (month && from && to) {
+              return {
+                month: month.format('YYYY-MM-01'),
+                from_date: from.format('YYYY-MM-DD'),
+                to_date: to.format('YYYY-MM-DD')
+              };
+            }
+            return null;
+          })
+          .filter(p => p !== null),
+
+        // Tab 9: FY End
+        fy_end_periods: fyEndPeriods
+          .map((_, index) => {
+            const month = fyEndValues[`fyend_month_${index}`];
+            const from = fyEndValues[`fyend_from_${index}`];
+            const to = fyEndValues[`fyend_to_${index}`];
+
+            if (month && from && to) {
+              return {
+                month: month.format('YYYY-MM-01'),
+                from_date: from.format('YYYY-MM-DD'),
+                to_date: to.format('YYYY-MM-DD')
+              };
+            }
+            return null;
+          })
+          .filter(p => p !== null),
+
+        // Tab 10: Feature Access
+        clinician_pay_system_enabled: clinicianPayEnabled,
+        power_bi_reports_enabled: powerBIEnabled
+      };
+
+      // Submit to API
+      if (isEditMode && clientId) {
+        message.loading({ content: 'Updating client...', key: 'submit', duration: 0 });
+        const response = await clientService.updateClient(clientId, payload);
+        message.success({ content: 'Client updated successfully!', key: 'submit', duration: 2 });
+      } else {
+        message.loading({ content: 'Creating client...', key: 'submit', duration: 0 });
+        const response = await clientService.createClient(payload);
+        message.success({ content: 'Client onboarding completed successfully!', key: 'submit', duration: 2 });
+      }
+
+      // Navigate back to onboarding list after showing success message
+      setTimeout(() => {
+        navigate('/onboarding');
+      }, 2000);
+
+    } catch (error: any) {
+      console.error(`Failed to ${isEditMode ? 'update' : 'create'} client:`, error);
+      console.error('Error data:', error.data);
+      console.error('Error message:', error.message);
+      console.error('Payload sent:', payload);
+
+      // Format validation error message
+      let errorMessage = `Failed to ${isEditMode ? 'update' : 'create'} client. Please check all required fields and try again.`;
+
+      // Check if error.data.detail exists (Pydantic validation errors)
+      if (error.data?.detail) {
+        if (Array.isArray(error.data.detail)) {
+          console.error('Validation errors:', error.data.detail);
+          errorMessage = error.data.detail.map((err: any) =>
+            `${err.loc?.join(' → ')}: ${err.msg}`
+          ).join('\n');
+        } else {
+          errorMessage = error.data.detail;
+        }
+      } else if (Array.isArray(error.message)) {
+        // If message is already formatted as array
+        console.error('Error messages:', error.message);
+        errorMessage = error.message.map((err: any) =>
+          typeof err === 'string' ? err : `${err.loc?.join(' → ')}: ${err.msg}`
+        ).join('\n');
+      }
+
+      message.error({
+        content: errorMessage,
+        key: 'submit',
+        duration: 15
+      });
+    }
   };
 
   const checkArrowsVisibility = () => {
@@ -176,51 +369,93 @@ const ClientOnboardingCreate: React.FC = () => {
 
   // Load existing client data when in edit mode
   React.useEffect(() => {
-    if (isEditMode && clientId) {
-      // Mock data - In production, fetch from API
-      const mockClientData = {
-        type: 'ltd-company',
-        tradingName: 'Dental Care',
-        entityReference: 'DEN2237',
-        addressLine1: '123 High Street',
-        postCode: 'SW1A 1AA',
-        addressLine2: 'Suite 100',
-        city: 'London',
-        county: 'Greater London',
-        country: 'uk',
-        companyRegNo: '12345678',
-        xeroVatTaxType: 'Standard Rate',
-        phoneNumber: '+44 20 1234 5678',
-        emailId: 'info@dentalcare.com',
-        adminUserFullName: 'John Smith',
-        adminUserEmail: 'john.smith@dentalcare.com',
-        accountingSystem: 'xero',
-        licenseWorkfinUsers: '5',
-        licenseCompassConnections: '3',
-        licenseFinanceSystemConnections: '2',
-        licensePracticeManagementConnections: '1',
-        licensePurchasingSystemConnections: '1',
-        accountantName: 'ABC Accountants Ltd',
-        accountantAddress: '456 Business Park',
-        accountantContactNo: '+44 20 9876 5432',
-        accountantEmail: 'contact@abcaccountants.com',
-        nameOfProvider: 'Tech Solutions Ltd',
-        address: '789 Tech Street',
-        postCode2: 'EC1A 1BB',
-        contactName: 'Jane Doe',
-        telephoneNo: '+44 20 1111 2222',
-        telephoneNo1: '+44 20 3333 4444',
-        email: 'support@techsolutions.com',
-        additionalNotes: 'Preferred contact time: 9am-5pm'
-      };
+    const fetchClientData = async () => {
+      if (isEditMode && clientId) {
+        try {
+          message.loading({ content: 'Loading client data...', key: 'loadClient', duration: 0 });
 
-      // Populate forms with existing data
-      form.setFieldsValue(mockClientData);
-      contactForm.setFieldsValue(mockClientData);
-      licenseForm.setFieldsValue(mockClientData);
-      accountantForm.setFieldsValue(mockClientData);
-      itProviderForm.setFieldsValue(mockClientData);
-    }
+          const clientData = await clientService.getClient(clientId) as any;
+          console.log('Fetched client data:', clientData);
+
+          // Transform API data to form field structure
+          const formData = {
+            type: clientData.client_type || '',
+            tradingName: clientData.legal_trading_name || '',
+            entityReference: clientData.workfin_reference || '',
+            addressLine1: clientData.address?.line1 || '',
+            addressLine2: clientData.address?.line2 || '',
+            city: clientData.address?.city || '',
+            county: clientData.address?.county || '',
+            postCode: clientData.address?.postcode || '',
+            country: clientData.address?.country || 'United Kingdom',
+            companyRegNo: clientData.company_registration_no || '',
+            xeroVatTaxType: clientData.xero_vat_tax_type || '',
+          };
+
+          // Get admin user data from the first user (ClientAdmin)
+          const adminUser = clientData.users && clientData.users.length > 0 ? clientData.users[0] : null;
+
+          const contactData = {
+            phoneNumber: clientData.contact_phone || '',
+            emailId: clientData.contact_email || '',
+            adminUserFullName: adminUser?.name || '',
+            adminUserEmail: adminUser?.email || '',
+          };
+
+          const licenseData = {
+            accountingSystem: clientData.accounting_system || '',
+            xeroApp: clientData.xero_app || '',
+            licenseWorkfinUsers: String(clientData.license_workfin_users || 0),
+            licenseCompassConnections: String(clientData.license_compass_connections || 0),
+            licenseFinanceSystemConnections: String(clientData.license_finance_system_connections || 0),
+            licensePracticeManagementConnections: String(clientData.license_pms_connections || 0),
+            licensePurchasingSystemConnections: String(clientData.license_purchasing_system_connections || 0),
+          };
+
+          const accountantData = {
+            accountantName: clientData.accountant_name || '',
+            accountantAddress: clientData.accountant_address || '',
+            accountantContactNo: clientData.accountant_contact_no || '',
+            accountantEmail: clientData.accountant_email || '',
+          };
+
+          const itProviderData = {
+            nameOfProvider: clientData.it_provider_name || '',
+            address: clientData.it_provider_address || '',
+            postCode: clientData.it_provider_postcode || '',
+            contactName: clientData.it_provider_contact_name || '',
+            telephoneNo: clientData.it_provider_phone_1 || '',
+            telephoneNo1: clientData.it_provider_phone_2 || '',
+            email: clientData.it_provider_email || '',
+            additionalNotes: clientData.it_provider_notes || '',
+          };
+
+          // Populate forms with existing data
+          console.log('Setting form data:', { formData, contactData, licenseData, accountantData, itProviderData });
+          form.setFieldsValue(formData);
+          contactForm.setFieldsValue(contactData);
+          licenseForm.setFieldsValue(licenseData);
+          accountantForm.setFieldsValue(accountantData);
+          itProviderForm.setFieldsValue(itProviderData);
+
+          // Set adjustment types if available
+          if (clientData.adjustment_types && clientData.adjustment_types.length > 0) {
+            setAdjustmentTypes(clientData.adjustment_types.map((at: any) => at.name));
+          }
+
+          // Set feature toggles
+          setClinicianPayEnabled(clientData.feature_clinician_pay_enabled ?? true);
+          setPowerBIEnabled(clientData.feature_powerbi_enabled ?? false);
+
+          message.success({ content: 'Client data loaded successfully', key: 'loadClient', duration: 2 });
+        } catch (error: any) {
+          console.error('Failed to fetch client data:', error);
+          message.error({ content: 'Failed to load client data', key: 'loadClient', duration: 5 });
+        }
+      }
+    };
+
+    fetchClientData();
   }, [isEditMode, clientId]);
 
   const tabItems = [
@@ -399,6 +634,7 @@ const ClientOnboardingCreate: React.FC = () => {
                 <Form.Item
                   label="Phone Number"
                   name="phoneNumber"
+                  rules={[{ required: true, message: 'Please enter phone number' }]}
                 >
                   <Input placeholder="Enter phone number" />
                 </Form.Item>
@@ -407,6 +643,10 @@ const ClientOnboardingCreate: React.FC = () => {
                 <Form.Item
                   label="Email ID"
                   name="emailId"
+                  rules={[
+                    { required: true, message: 'Please enter email ID' },
+                    { type: 'email', message: 'Please enter a valid email' }
+                  ]}
                 >
                   <Input placeholder="Enter email ID" />
                 </Form.Item>
