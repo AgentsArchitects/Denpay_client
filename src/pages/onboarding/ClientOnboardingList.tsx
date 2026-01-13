@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Input, Button, Breadcrumb, Tag, message, Modal } from 'antd';
-import { SearchOutlined, PlusOutlined, UserOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { SearchOutlined, PlusOutlined, UserOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, UndoOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { Link, useNavigate } from 'react-router-dom';
 import clientService from '../../services/clientService';
@@ -66,23 +66,26 @@ const ClientOnboardingList: React.FC = () => {
     return `${day}/${month}/${year}`;
   };
 
-  const handleDelete = (clientId: string, clientName: string) => {
+  const handleStatusToggle = (clientId: string, clientName: string, currentStatus: 'Active' | 'Inactive') => {
+    const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+    const action = currentStatus === 'Active' ? 'deactivate' : 'activate';
+
     Modal.confirm({
-      title: 'Delete Client',
+      title: `${currentStatus === 'Active' ? 'Deactivate' : 'Activate'} Client`,
       icon: <ExclamationCircleOutlined />,
-      content: `Are you sure you want to delete "${clientName}"? This action cannot be undone.`,
-      okText: 'Delete',
-      okType: 'danger',
+      content: `Are you sure you want to ${action} "${clientName}"?`,
+      okText: currentStatus === 'Active' ? 'Deactivate' : 'Activate',
+      okType: currentStatus === 'Active' ? 'danger' : 'primary',
       cancelText: 'Cancel',
       onOk: async () => {
         try {
           await clientService.deleteClient(clientId);
-          message.success('Client deleted successfully');
+          message.success(`Client status changed to ${newStatus} successfully`);
           // Refresh the client list
           fetchClients();
         } catch (error: any) {
-          console.error('Failed to delete client:', error);
-          message.error('Failed to delete client. Please try again.');
+          console.error('Failed to change client status:', error);
+          message.error('Failed to change client status. Please try again.');
         }
       }
     });
@@ -110,7 +113,7 @@ const ClientOnboardingList: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
-        <Tag color="success" className="status-tag">
+        <Tag color={status === 'Active' ? 'success' : 'error'} className="status-tag">
           {status}
         </Tag>
       ),
@@ -136,9 +139,9 @@ const ClientOnboardingList: React.FC = () => {
           />
           <Button
             type="text"
-            icon={<DeleteOutlined />}
-            className="action-btn delete-btn"
-            onClick={() => handleDelete(record.key, record.tradingName)}
+            icon={record.status === 'Active' ? <DeleteOutlined /> : <UndoOutlined />}
+            className={`action-btn ${record.status === 'Active' ? 'delete-btn' : 'restore-btn'}`}
+            onClick={() => handleStatusToggle(record.key, record.tradingName, record.status)}
           />
         </div>
       ),

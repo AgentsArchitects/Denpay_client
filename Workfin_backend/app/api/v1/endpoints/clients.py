@@ -234,6 +234,7 @@ async def create_client(client: ClientCreate, db: AsyncSession = Depends(get_db)
             select(Client)
             .options(
                 selectinload(Client.address),
+                selectinload(Client.users),
                 selectinload(Client.adjustment_types),
                 selectinload(Client.pms_integrations),
                 selectinload(Client.denpay_periods),
@@ -362,7 +363,7 @@ async def update_client(client_id: str, client: ClientUpdate, db: AsyncSession =
 
 @router.delete("/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_client(client_id: str, db: AsyncSession = Depends(get_db)):
-    """Delete a client"""
+    """Toggle client status between Active and Inactive (soft delete/restore)"""
     try:
         result = await db.execute(
             select(Client).where(Client.id == uuid.UUID(client_id))
@@ -375,7 +376,8 @@ async def delete_client(client_id: str, db: AsyncSession = Depends(get_db)):
                 detail="Client not found"
             )
 
-        await db.delete(client)
+        # Toggle status: Active <-> Inactive
+        client.status = "Inactive" if client.status == "Active" else "Active"
         await db.commit()
         return None
     except ValueError:
@@ -387,7 +389,7 @@ async def delete_client(client_id: str, db: AsyncSession = Depends(get_db)):
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete client: {str(e)}"
+            detail=f"Failed to change client status: {str(e)}"
         )
 
 

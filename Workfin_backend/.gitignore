@@ -50,3 +50,9 @@ wheels/
 .DATABASE_SETUP_GUIDE.md
 
 .nul
+.client_onboarding_Delete_client_issue.md
+
+# Documentation files that may contain sensitive info
+SUCCESS_SUMMARY.md
+CONNECTION_STATUS.md
+*.md

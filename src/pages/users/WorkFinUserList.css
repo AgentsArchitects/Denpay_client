@@ -26,6 +26,7 @@
   align-items: center;
   margin-bottom: 24px;
   position: relative;
+  flex-wrap: nowrap;
 }
 
 .page-title {
@@ -37,10 +38,11 @@
 }
 
 .workfin-user-container .header-actions {
-  position: fixed;
-  right: 40px;
-  top: 120px;
-  z-index: 100;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  margin-left: auto;
 }
 
 .add-user-btn {

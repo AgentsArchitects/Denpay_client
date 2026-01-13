@@ -42,6 +42,7 @@ const ClientOnboardingCreate: React.FC = () => {
   const [newAdjustment, setNewAdjustment] = useState('');
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const tabsRef = React.useRef<HTMLDivElement>(null);
 
   const handleCancel = () => {
@@ -116,10 +117,17 @@ const ClientOnboardingCreate: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    // Prevent double submission
+    if (isSubmitting) {
+      return;
+    }
+
     // Declare payload outside try block for error logging
     let payload: any = null;
 
     try {
+      setIsSubmitting(true);
+
       // Validate required forms
       await Promise.all([
         form.validateFields(),
@@ -284,6 +292,9 @@ const ClientOnboardingCreate: React.FC = () => {
         key: 'submit',
         duration: 15
       });
+    } finally {
+      // Always reset the submitting flag to allow retry
+      setIsSubmitting(false);
     }
   };
 
