@@ -25,6 +25,7 @@ wheels/
 
 # Environment
 .env
+Worfin_backend/.env
 .env.local
 
 # IDE
@@ -56,3 +57,4 @@ wheels/
 SUCCESS_SUMMARY.md
 CONNECTION_STATUS.md
 *.md
+!Readme.md

@@ -43,13 +43,4 @@ export const API_ENDPOINTS = {
     DISCONNECT: (id: string) => `/xero/disconnect/${id}`,
     GET: (id: string) => `/xero/${id}`,
   },
-
-  // Chart of Accounts
-  COA: {
-    LIST: '/coa/categories',
-    CREATE: '/coa/categories',
-    GET: (id: string) => `/coa/categories/${id}`,
-    UPDATE: (id: string) => `/coa/categories/${id}`,
-    DELETE: (id: string) => `/coa/categories/${id}`,
-  },
 } as const;

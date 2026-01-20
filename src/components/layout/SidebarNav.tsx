@@ -58,12 +58,6 @@ const SidebarNav: React.FC<SidebarNavProps> = ({ collapsed }) => {
       ]
     },
     {
-      section: 'COA',
-      items: [
-        { key: '/coa', icon: <SettingOutlined />, label: 'CoA Categories' }
-      ]
-    },
-    {
       section: 'ACCOUNT MGMT.',
       items: [
         {

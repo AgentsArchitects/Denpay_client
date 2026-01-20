@@ -3,7 +3,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/auth/LoginPage';
 import Practice360 from './pages/dashboard/Practice360';
 import XeroList from './pages/xero/XeroList';
-import CoACategories from './pages/coa/CoACategories';
 import ClientOnboardingList from './pages/onboarding/ClientOnboardingList';
 import ClientOnboardingUsers from './pages/onboarding/ClientOnboardingUsers';
 import ClientOnboardingCreate from './pages/onboarding/ClientOnboardingCreate';
@@ -25,11 +24,6 @@ const App: React.FC = () => {
       <Route path="/xero/list" element={
         <DashboardLayout>
           <XeroList />
-        </DashboardLayout>
-      } />
-      <Route path="/coa" element={
-        <DashboardLayout>
-          <CoACategories />
         </DashboardLayout>
       } />
       <Route path="/onboarding" element={

@@ -614,8 +614,15 @@ const ClientOnboardingCreate: React.FC = () => {
                 <Form.Item
                   label="Company House Registration No."
                   name="companyRegNo"
+                  rules={[
+                    { max: 8, message: 'Registration number must not exceed 8 characters' },
+                    { pattern: /^[A-Za-z0-9]*$/, message: 'Only letters and numbers are allowed' }
+                  ]}
                 >
-                  <Input placeholder="Enter company house registration no." />
+                  <Input
+                    placeholder="Enter company house registration no."
+                    maxLength={8}
+                  />
                 </Form.Item>
               </div>
             </div>
@@ -645,9 +652,17 @@ const ClientOnboardingCreate: React.FC = () => {
                 <Form.Item
                   label="Phone Number"
                   name="phoneNumber"
-                  rules={[{ required: true, message: 'Please enter phone number' }]}
+                  rules={[
+                    { required: true, message: 'Please enter phone number' },
+                    { min: 10, message: 'Phone number must be at least 10 digits' },
+                    { max: 15, message: 'Phone number must not exceed 15 digits' },
+                    { pattern: /^[0-9]*$/, message: 'Only numbers are allowed' }
+                  ]}
                 >
-                  <Input placeholder="Enter phone number" />
+                  <Input
+                    placeholder="Enter phone number"
+                    maxLength={15}
+                  />
                 </Form.Item>
               </div>
               <div className="form-col">
@@ -656,7 +671,8 @@ const ClientOnboardingCreate: React.FC = () => {
                   name="emailId"
                   rules={[
                     { required: true, message: 'Please enter email ID' },
-                    { type: 'email', message: 'Please enter a valid email' }
+                    { type: 'email', message: 'Please enter a valid email address' },
+                    { pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Please enter a valid email address' }
                   ]}
                 >
                   <Input placeholder="Enter email ID" />
