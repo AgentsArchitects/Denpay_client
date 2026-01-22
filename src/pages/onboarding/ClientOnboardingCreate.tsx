@@ -350,7 +350,7 @@ const ClientOnboardingCreate: React.FC = () => {
 
     // Force ink bar to update position with multiple attempts
     const updateInkBar = () => {
-      const activeTabElement = document.querySelector('.client-onboarding-tabs .ant-tabs-tab-active');
+      const activeTabElement = document.querySelector('.client-onboarding-tabs .ant-tabs-tab-active') as HTMLElement;
       const inkBar = document.querySelector('.client-onboarding-tabs .ant-tabs-ink-bar') as HTMLElement;
       const navList = document.querySelector('.client-onboarding-tabs .ant-tabs-nav-list') as HTMLElement;
 

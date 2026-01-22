@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Input, Select, Button, Tabs, Dropdown, Menu, Breadcrumb, message, Tag } from 'antd';
+import { Card, Table, Input, Select, Button, Tabs, Dropdown, Breadcrumb, message, Tag } from 'antd';
 import { SearchOutlined, PlusOutlined, PrinterOutlined, DownloadOutlined, UploadOutlined, MoreOutlined, LoadingOutlined, SyncOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -21,7 +21,7 @@ const XeroList: React.FC = () => {
   const [selectedDental, setSelectedDental] = useState('dental-care');
   const [activeTab, setActiveTab] = useState('all');
   const [connecting, setConnecting] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
   const [data, setData] = useState<XeroIntegration[]>([]);
 
   // Fetch tenants on mount

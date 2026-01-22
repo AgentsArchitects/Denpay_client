@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
+
 venv/
 ENV/
 build/
@@ -25,7 +25,6 @@ wheels/
 
 # Environment
 .env
-.env.local
 
 # IDE
 .vscode/

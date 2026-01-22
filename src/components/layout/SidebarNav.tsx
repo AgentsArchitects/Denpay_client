@@ -10,7 +10,6 @@ import {
   UserOutlined,
   CalendarOutlined,
   LogoutOutlined,
-  RightOutlined,
   DownOutlined
 } from '@ant-design/icons';
 import './SidebarNav.css';
@@ -19,12 +18,32 @@ interface SidebarNavProps {
   collapsed: boolean;
 }
 
+interface SubmenuItem {
+  key: string;
+  label: string;
+}
+
+interface MenuItem {
+  key: string;
+  icon: React.ReactNode;
+  label: string;
+  hasSubmenu?: boolean;
+  submenu?: SubmenuItem[];
+  external?: boolean;
+  externalUrl?: string;
+}
+
+interface MenuSection {
+  section: string;
+  items: MenuItem[];
+}
+
 const SidebarNav: React.FC<SidebarNavProps> = ({ collapsed }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
 
-  const menuItems = [
+  const menuItems: MenuSection[] = [
     {
       section: 'OVERVIEW',
       items: [
@@ -126,7 +145,7 @@ const SidebarNav: React.FC<SidebarNavProps> = ({ collapsed }) => {
     );
   };
 
-  const handleMenuItemClick = (item: any) => {
+  const handleMenuItemClick = (item: MenuItem) => {
     if (item.hasSubmenu && !collapsed) {
       toggleSubmenu(item.key);
     } else if (item.external && item.externalUrl) {

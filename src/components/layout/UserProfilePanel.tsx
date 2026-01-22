@@ -2,7 +2,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, Divider, Button } from 'antd';
 import {
-  UserOutlined,
   HomeOutlined,
   LockOutlined,
   CloseOutlined
