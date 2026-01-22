@@ -19,6 +19,12 @@ class Settings(BaseSettings):
     # Database Settings
     DATABASE_URL: str = ""
 
+    # Xero Settings
+    XERO_CLIENT_ID: str = ""
+    XERO_CLIENT_SECRET: str = ""
+    XERO_REDIRECT_URI: str = "http://localhost:8001/api/xero/callback"
+    XERO_SCOPES: str = "openid profile email accounting.transactions accounting.contacts accounting.settings accounting.journals.read offline_access"
+
     @field_validator('CORS_ORIGINS', mode='before')
     @classmethod
     def parse_cors_origins(cls, v):

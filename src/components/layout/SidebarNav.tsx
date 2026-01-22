@@ -52,15 +52,19 @@ const SidebarNav: React.FC<SidebarNavProps> = ({ collapsed }) => {
           label: 'Xero',
           hasSubmenu: true,
           submenu: [
-            { key: '/xero/list', label: 'List' }
+            { key: '/xero/list', label: 'Connections' },
+            { key: '/xero/accounts', label: 'Accounts (CoA)' },
+            { key: '/xero/contacts', label: 'Contacts' },
+            { key: '/xero/contact-groups', label: 'Contact Groups' },
+            { key: '/xero/invoices', label: 'Invoices' },
+            { key: '/xero/credit-notes', label: 'Credit Notes' },
+            { key: '/xero/payments', label: 'Payments' },
+            { key: '/xero/bank-transactions', label: 'Bank Transactions' },
+            { key: '/xero/bank-transfers', label: 'Bank Transfers' },
+            { key: '/xero/journals', label: 'Journals' },
+            { key: '/xero/journal-lines', label: 'Journal Lines' }
           ]
         }
-      ]
-    },
-    {
-      section: 'COA',
-      items: [
-        { key: '/coa', icon: <SettingOutlined />, label: 'CoA Categories' }
       ]
     },
     {

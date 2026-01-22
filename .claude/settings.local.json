@@ -4,7 +4,8 @@
       "Bash(curl:*)",
       "Bash(netstat:*)",
       "Bash(findstr:*)",
-      "Bash(ping:*)"
+      "Bash(ping:*)",
+      "Bash(dir:*)"
     ]
   }
 }

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { Card, Table, Input, Select, Button, Tabs, Dropdown, Menu, Breadcrumb } from 'antd';
-import { SearchOutlined, PlusOutlined, PrinterOutlined, DownloadOutlined, UploadOutlined, MoreOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
+import { Card, Table, Input, Select, Button, Tabs, Dropdown, Menu, Breadcrumb, message, Tag } from 'antd';
+import { SearchOutlined, PlusOutlined, PrinterOutlined, DownloadOutlined, UploadOutlined, MoreOutlined, LoadingOutlined, SyncOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import xeroService from '../../services/xeroService';
 import './XeroList.css';
 
 const { Option } = Select;
@@ -11,12 +12,95 @@ interface XeroIntegration {
   key: string;
   id: string;
   integrationName: string;
+  tenantId: string;
   status: 'Active' | 'Unauthenticated' | 'Removed';
 }
 
 const XeroList: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [selectedDental, setSelectedDental] = useState('dental-care');
   const [activeTab, setActiveTab] = useState('all');
+  const [connecting, setConnecting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<XeroIntegration[]>([]);
+
+  // Fetch tenants on mount
+  useEffect(() => {
+    fetchTenants();
+  }, []);
+
+  // Check URL params for connection status after fetching tenants
+  useEffect(() => {
+    const xeroStatus = searchParams.get('xero');
+    if (xeroStatus === 'connected') {
+      message.success('Successfully connected to Xero!');
+      window.history.replaceState({}, '', '/xero/list');
+      fetchTenants();
+    } else if (xeroStatus === 'error') {
+      // Only show error if we don't have any connected tenants
+      // (the error might be a transient DB issue but Xero connection still worked)
+      if (data.length === 0) {
+        const errorMsg = searchParams.get('message') || 'Unknown error';
+        // Don't show technical errors to users
+        if (!errorMsg.includes('getaddrinfo') && !errorMsg.includes('prepared statement')) {
+          message.error(`Failed to connect: ${errorMsg}`);
+        }
+      }
+      window.history.replaceState({}, '', '/xero/list');
+    }
+  }, [searchParams, data.length]);
+
+  const fetchTenants = async (retryCount = 0) => {
+    setLoading(true);
+    try {
+      const tenants = await xeroService.getTenants();
+      const integrations: XeroIntegration[] = tenants.map((tenant, index) => ({
+        key: tenant.tenant_id,
+        id: String(index + 1).padStart(3, '0'),
+        integrationName: tenant.tenant_name,
+        tenantId: tenant.tenant_id,
+        status: 'Active' as const,
+      }));
+      setData(integrations);
+    } catch (error: any) {
+      // Retry once after a short delay (handles transient DB issues)
+      if (retryCount === 0 && error?.status !== 401) {
+        setTimeout(() => fetchTenants(1), 500);
+        return;
+      }
+      if (error?.status !== 401) {
+        console.error('Failed to fetch tenants:', error);
+      }
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConnectToXero = async () => {
+    try {
+      setConnecting(true);
+      await xeroService.connectToXero();
+    } catch (error) {
+      console.error('Failed to connect to Xero:', error);
+      message.error('Failed to initiate Xero connection. Please try again.');
+      setConnecting(false);
+    }
+  };
+
+  const handleSyncData = async (tenantId: string, tenantName: string, fullSync: boolean = false) => {
+    try {
+      message.loading({ content: `Syncing data from ${tenantName}...`, key: 'sync' });
+      const results = fullSync
+        ? await xeroService.syncAll(tenantId)
+        : await xeroService.syncQuick(tenantId, 20);
+      const successCount = results.filter(r => r.status === 'success').length;
+      const totalRecords = results.reduce((sum, r) => sum + r.synced_count, 0);
+      message.success({ content: `Synced ${totalRecords} records (${successCount} entities) from ${tenantName}!`, key: 'sync' });
+    } catch (error) {
+      message.error({ content: 'Failed to sync data', key: 'sync' });
+    }
+  };
 
   const dentalOptions = [
     { value: 'dental-care', label: 'Dental Care' },
@@ -28,7 +112,32 @@ const XeroList: React.FC = () => {
     { value: 'esk-healthcare', label: 'ESK Healthcare Group Ltd' }
   ];
 
-  const actionMenuItems = [
+  const getActionMenuItems = (record: XeroIntegration) => [
+    {
+      key: 'quick-sync',
+      icon: <SyncOutlined />,
+      label: 'Quick Sync (Top 20)',
+      onClick: () => handleSyncData(record.tenantId, record.integrationName, false),
+    },
+    {
+      key: 'full-sync',
+      icon: <SyncOutlined />,
+      label: 'Full Sync (All Data)',
+      onClick: () => handleSyncData(record.tenantId, record.integrationName, true),
+    },
+    {
+      key: 'print',
+      icon: <PrinterOutlined />,
+      label: 'Print',
+    },
+    {
+      key: 'export',
+      icon: <DownloadOutlined />,
+      label: 'Export',
+    }
+  ];
+
+  const tableActionMenuItems = [
     {
       key: 'print',
       icon: <PrinterOutlined />,
@@ -63,9 +172,9 @@ const XeroList: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status) => (
-        <span className={`status-badge status-${status.toLowerCase()}`}>
+        <Tag color={status === 'Active' ? 'green' : status === 'Unauthenticated' ? 'orange' : 'red'}>
           {status}
-        </span>
+        </Tag>
       ),
     },
     {
@@ -73,16 +182,17 @@ const XeroList: React.FC = () => {
       key: 'action',
       width: 80,
       align: 'center',
-      render: () => (
-        <Dropdown menu={{ items: actionMenuItems }} trigger={['click']} placement="bottomRight">
+      render: (_, record) => (
+        <Dropdown menu={{ items: getActionMenuItems(record) }} trigger={['click']} placement="bottomRight">
           <Button type="text" icon={<MoreOutlined />} />
         </Dropdown>
       ),
     },
   ];
 
-  // Mock data - empty for now
-  const data: XeroIntegration[] = [];
+  const activeCount = data.filter(d => d.status === 'Active').length;
+  const unauthCount = data.filter(d => d.status === 'Unauthenticated').length;
+  const removedCount = data.filter(d => d.status === 'Removed').length;
 
   const tabItems = [
     {
@@ -91,15 +201,15 @@ const XeroList: React.FC = () => {
     },
     {
       key: 'active',
-      label: `Active 0`,
+      label: `Active ${activeCount}`,
     },
     {
       key: 'unauthenticated',
-      label: `Unauthenticated 0`,
+      label: `Unauthenticated ${unauthCount}`,
     },
     {
       key: 'removed',
-      label: `Removed 0`,
+      label: `Removed ${removedCount}`,
     },
   ];
 
@@ -134,9 +244,11 @@ const XeroList: React.FC = () => {
           </Select>
           <Button
             type="primary"
-            icon={<PlusOutlined />}
+            icon={connecting ? <LoadingOutlined /> : <PlusOutlined />}
             size="large"
             className="connect-btn"
+            onClick={handleConnectToXero}
+            loading={connecting}
           >
             Connect to Xero
           </Button>
@@ -161,7 +273,7 @@ const XeroList: React.FC = () => {
             style={{ width: 300 }}
             className="search-input"
           />
-          <Dropdown menu={{ items: actionMenuItems }} trigger={['click']} placement="bottomRight">
+          <Dropdown menu={{ items: tableActionMenuItems }} trigger={['click']} placement="bottomRight">
             <Button type="text" icon={<MoreOutlined />} className="action-dots-btn" />
           </Dropdown>
         </div>

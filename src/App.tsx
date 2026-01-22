@@ -3,7 +3,16 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/auth/LoginPage';
 import Practice360 from './pages/dashboard/Practice360';
 import XeroList from './pages/xero/XeroList';
-import CoACategories from './pages/coa/CoACategories';
+import XeroAccounts from './pages/xero/XeroAccounts';
+import XeroContacts from './pages/xero/XeroContacts';
+import XeroInvoices from './pages/xero/XeroInvoices';
+import XeroCreditNotes from './pages/xero/XeroCreditNotes';
+import XeroPayments from './pages/xero/XeroPayments';
+import XeroBankTransactions from './pages/xero/XeroBankTransactions';
+import XeroBankTransfers from './pages/xero/XeroBankTransfers';
+import XeroJournals from './pages/xero/XeroJournals';
+import XeroJournalLines from './pages/xero/XeroJournalLines';
+import XeroContactGroups from './pages/xero/XeroContactGroups';
 import ClientOnboardingList from './pages/onboarding/ClientOnboardingList';
 import ClientOnboardingUsers from './pages/onboarding/ClientOnboardingUsers';
 import ClientOnboardingCreate from './pages/onboarding/ClientOnboardingCreate';
@@ -27,9 +36,54 @@ const App: React.FC = () => {
           <XeroList />
         </DashboardLayout>
       } />
-      <Route path="/coa" element={
+      <Route path="/xero/accounts" element={
         <DashboardLayout>
-          <CoACategories />
+          <XeroAccounts />
+        </DashboardLayout>
+      } />
+      <Route path="/xero/contacts" element={
+        <DashboardLayout>
+          <XeroContacts />
+        </DashboardLayout>
+      } />
+      <Route path="/xero/invoices" element={
+        <DashboardLayout>
+          <XeroInvoices />
+        </DashboardLayout>
+      } />
+      <Route path="/xero/credit-notes" element={
+        <DashboardLayout>
+          <XeroCreditNotes />
+        </DashboardLayout>
+      } />
+      <Route path="/xero/payments" element={
+        <DashboardLayout>
+          <XeroPayments />
+        </DashboardLayout>
+      } />
+      <Route path="/xero/bank-transactions" element={
+        <DashboardLayout>
+          <XeroBankTransactions />
+        </DashboardLayout>
+      } />
+      <Route path="/xero/journals" element={
+        <DashboardLayout>
+          <XeroJournals />
+        </DashboardLayout>
+      } />
+      <Route path="/xero/journal-lines" element={
+        <DashboardLayout>
+          <XeroJournalLines />
+        </DashboardLayout>
+      } />
+      <Route path="/xero/contact-groups" element={
+        <DashboardLayout>
+          <XeroContactGroups />
+        </DashboardLayout>
+      } />
+      <Route path="/xero/bank-transfers" element={
+        <DashboardLayout>
+          <XeroBankTransfers />
         </DashboardLayout>
       } />
       <Route path="/onboarding" element={

@@ -32,7 +32,9 @@ apiClient.interceptors.response.use(
   },
   (error: AxiosError) => {
     // Handle 401 Unauthorized - redirect to login
-    if (error.response?.status === 401) {
+    // But skip redirect for Xero endpoints (they return 401 when not connected)
+    const isXeroEndpoint = error.config?.url?.includes('/xero');
+    if (error.response?.status === 401 && !isXeroEndpoint) {
       localStorage.removeItem('access_token');
       localStorage.removeItem('user');
       window.location.href = '/login';
