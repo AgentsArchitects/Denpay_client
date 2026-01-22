@@ -7,56 +7,41 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python version
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Create virtual environment and install dependencies
+      - name: Zip backend code
         run: |
           cd Workfin_backend
-          python -m venv antenv
-          source antenv/bin/activate
-          pip install -r requirements.txt
-
-      - name: Zip artifact for deployment
-        run: |
-          cd Workfin_backend
-          zip -r ../release.zip . -x "antenv/*" -x "*.git*" -x "*__pycache__/*" -x "*.pyc" -x ".env" -x "denpay_venv/*" -x "venv/*"
-
-      - name: Upload artifact for deployment jobs
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-app
-          path: release.zip
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    environment:
-      name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-
-    steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
-        with:
-          name: python-app
-
-      - name: Unzip artifact
-        run: unzip release.zip -d ./deploy
+          zip -r ../app.zip . -x "*.git*" -x "*__pycache__/*" -x "*.pyc" -x ".env" -x "denpay_venv/*" -x "venv/*" -x "antenv/*"
 
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
-        id: deploy-to-webapp
         with:
           app-name: 'api-uat-uk-workfin-02'
-          slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_86DDE6A773494014894CA4754259E83C }}
-          package: ./deploy
+          package: app.zip
+```
+
+### Step 2: Ensure These Environment Variables Are Set
+
+Go to App Service → **Environment variables** → Verify these exist:
+
+| Name | Value |
+|------|-------|
+| `SCM_DO_BUILD_DURING_DEPLOYMENT` | `true` |
+| `ENABLE_ORYX_BUILD` | `true` |
+| `DATABASE_URL` | `postgresql://dp_admin:PZDlJ0B1TU5g3h@pgsql-uat-uk-workfin-01.postgres.database.azure.com:5432/workfin_uat_db?sslmode=require` |
+| `ENVIRONMENT` | `uat` |
+| `SECRET_KEY` | `your-secret-key` |
+
+Click **Apply** after adding.
+
+### Step 3: Startup Command Should Be
+
+Go to **Configuration (preview)** → **Stack settings**:
+```
+pip install -r requirements.txt && gunicorn -w 2 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:8000
