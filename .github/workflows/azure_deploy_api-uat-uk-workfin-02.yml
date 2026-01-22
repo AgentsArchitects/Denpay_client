@@ -13,6 +13,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./Workfin_backend
+        
     permissions:
       contents: read #This is required for actions/checkout
 
@@ -63,4 +68,5 @@ jobs:
         with:
           app-name: 'api-uat-uk-workfin-02'
           slot-name: 'Production'
+
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_86DDE6A773494014894CA4754259E83C }}
