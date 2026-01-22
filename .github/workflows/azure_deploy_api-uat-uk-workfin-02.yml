@@ -1,0 +1,26 @@
+name: Build and deploy Python app to Azure Web App - api-uat-uk-workfin-02
+
+on:
+  push:
+    branches:
+      - azure_deploy
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Zip backend code
+        run: |
+          cd Workfin_backend
+          zip -r ../app.zip . -x "*.git*" -x "*__pycache__/*" -x "*.pyc" -x ".env" -x "denpay_venv/*" -x "venv/*" -x "antenv/*"
+
+      - name: 'Deploy to Azure Web App'
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'api-uat-uk-workfin-02'
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_86DDE6A773494014894CA4754259E83C }}
+          package: app.zip
