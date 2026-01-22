@@ -24,24 +24,3 @@ jobs:
           app-name: 'api-uat-uk-workfin-02'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_86DDE6A773494014894CA4754259E83C }}
           package: app.zip
-```
-
-### Step 2: Ensure These Environment Variables Are Set
-
-Go to App Service → **Environment variables** → Verify these exist:
-
-| Name | Value |
-|------|-------|
-| `SCM_DO_BUILD_DURING_DEPLOYMENT` | `true` |
-| `ENABLE_ORYX_BUILD` | `true` |
-| `DATABASE_URL` | `postgresql://dp_admin:PZDlJ0B1TU5g3h@pgsql-uat-uk-workfin-01.postgres.database.azure.com:5432/workfin_uat_db?sslmode=require` |
-| `ENVIRONMENT` | `uat` |
-| `SECRET_KEY` | `your-secret-key` |
-
-Click **Apply** after adding.
-
-### Step 3: Startup Command Should Be
-
-Go to **Configuration (preview)** → **Stack settings**:
-```
-pip install -r requirements.txt && gunicorn -w 2 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:8000
