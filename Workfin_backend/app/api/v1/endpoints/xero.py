@@ -98,7 +98,7 @@ router = APIRouter()
 # OAuth Flow
 # ==================
 
-@router.get("/authorize")
+@router.get("/authorize/")
 async def authorize_xero(client_id: Optional[str] = None):
     """
     Step 1: Redirect user to Xero login page
@@ -109,7 +109,7 @@ async def authorize_xero(client_id: Optional[str] = None):
     return {"authorization_url": auth_url}
 
 
-@router.get("/callback")
+@router.get("/callback/")
 async def xero_callback(
     code: str = Query(..., description="Authorization code from Xero"),
     state: str = Query(default="default", description="State parameter"),
@@ -179,7 +179,7 @@ async def xero_callback(
         return RedirectResponse(url=f"https://api-uat-uk-workfin-02.azurewebsites.net/xero/list?xero=error&message={error_msg}")
 
 
-@router.get("/tenants", response_model=List[XeroTenant])
+@router.get("/tenants/", response_model=List[XeroTenant])
 async def get_xero_tenants(db: AsyncSession = Depends(get_db)):
     """Get list of connected Xero organizations"""
     # If not authenticated in memory, try to load tokens from database
@@ -253,7 +253,7 @@ async def disconnect_xero(db: AsyncSession = Depends(get_db)):
     return {"message": "Successfully disconnected from Xero"}
 
 
-@router.get("/status")
+@router.get("/status/")
 async def get_xero_status():
     """Check Xero connection status"""
     return {
@@ -1295,7 +1295,7 @@ async def sync_all_xero_data(
 # Data Retrieval Endpoints (GET synced data from database)
 # ==================
 
-@router.get("/data/accounts")
+@router.get("/data/accounts/")
 async def get_xero_accounts(
     tenant_id: Optional[str] = Query(None, description="Filter by Xero tenant ID"),
     page: int = Query(1, ge=1, description="Page number"),
@@ -1352,7 +1352,7 @@ async def get_xero_accounts(
         )
 
 
-@router.get("/data/contacts")
+@router.get("/data/contacts/")
 async def get_xero_contacts(
     tenant_id: Optional[str] = Query(None, description="Filter by Xero tenant ID"),
     page: int = Query(1, ge=1, description="Page number"),
@@ -1420,7 +1420,7 @@ async def get_xero_contacts(
         )
 
 
-@router.get("/data/invoices")
+@router.get("/data/invoices/")
 async def get_xero_invoices(
     tenant_id: Optional[str] = Query(None, description="Filter by Xero tenant ID"),
     page: int = Query(1, ge=1, description="Page number"),
@@ -1490,7 +1490,7 @@ async def get_xero_invoices(
         )
 
 
-@router.get("/data/credit-notes")
+@router.get("/data/credit-notes/")
 async def get_xero_credit_notes(
     tenant_id: Optional[str] = Query(None, description="Filter by Xero tenant ID"),
     page: int = Query(1, ge=1, description="Page number"),
@@ -1548,7 +1548,7 @@ async def get_xero_credit_notes(
         )
 
 
-@router.get("/data/payments")
+@router.get("/data/payments/")
 async def get_xero_payments(
     tenant_id: Optional[str] = Query(None, description="Filter by Xero tenant ID"),
     page: int = Query(1, ge=1, description="Page number"),
@@ -1603,7 +1603,7 @@ async def get_xero_payments(
         )
 
 
-@router.get("/data/bank-transactions")
+@router.get("/data/bank-transactions/")
 async def get_xero_bank_transactions(
     tenant_id: Optional[str] = Query(None, description="Filter by Xero tenant ID"),
     page: int = Query(1, ge=1, description="Page number"),
@@ -1660,7 +1660,7 @@ async def get_xero_bank_transactions(
         )
 
 
-@router.get("/data/journals")
+@router.get("/data/journals/")
 async def get_xero_journals(
     tenant_id: Optional[str] = Query(None, description="Filter by Xero tenant ID"),
     page: int = Query(1, ge=1, description="Page number"),
@@ -1713,7 +1713,7 @@ async def get_xero_journals(
         )
 
 
-@router.get("/data/journal-lines")
+@router.get("/data/journal-lines/")
 async def get_xero_journal_lines(
     tenant_id: Optional[str] = Query(None, description="Filter by Xero tenant ID"),
     journal_id: Optional[str] = Query(None, description="Filter by journal ID"),
@@ -1778,7 +1778,7 @@ async def get_xero_journal_lines(
         )
 
 
-@router.get("/data/contact-groups")
+@router.get("/data/contact-groups/")
 async def get_xero_contact_groups(
     tenant_id: Optional[str] = Query(None, description="Filter by Xero tenant ID"),
     page: int = Query(1, ge=1, description="Page number"),
@@ -1829,7 +1829,7 @@ async def get_xero_contact_groups(
         )
 
 
-@router.get("/data/bank-transfers")
+@router.get("/data/bank-transfers/")
 async def get_xero_bank_transfers(
     tenant_id: Optional[str] = Query(None, description="Filter by Xero tenant ID"),
     page: int = Query(1, ge=1, description="Page number"),
