@@ -5,7 +5,9 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(ping:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(git fetch:*)",
+      "Bash(git push:*)"
     ]
   }
 }

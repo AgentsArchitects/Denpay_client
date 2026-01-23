@@ -85,6 +85,10 @@ async def serve_root():
 # Catch-all for frontend routes (for SPA routing)
 @app.get("/{full_path:path}")
 async def serve_frontend(full_path: str):
+    # Don't intercept API routes - let them return 404 properly
+    if full_path.startswith("api/") or full_path.startswith("api"):
+        raise HTTPException(status_code=404, detail="API route not found")
+    
     static_dir = os.path.join(os.path.dirname(__file__), "static")
 
     # Try to serve as a static file first
