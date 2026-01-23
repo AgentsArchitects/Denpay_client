@@ -41,15 +41,6 @@ app.add_middleware(
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 
 
-@app.get("/")
-async def root():
-    return {
-        "message": "DenPay Client Onboarding API",
-        "version": "1.0.0",
-        "status": "running"
-    }
-
-
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
