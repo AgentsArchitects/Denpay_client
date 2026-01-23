@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.exceptions import HTTPException
 from contextlib import asynccontextmanager
 import os
@@ -60,7 +60,7 @@ if os.path.exists(static_dir):
 async def custom_404_handler(request: Request, _exc: HTTPException):
     # If it's an API route, return JSON 404
     if request.url.path.startswith(settings.API_V1_PREFIX):
-        return {"detail": "Not Found"}
+        return JSONResponse(status_code=404, content={"detail": "Not Found"})
 
     # For all other routes, serve the SPA index.html (for client-side routing)
     static_dir = os.path.join(os.path.dirname(__file__), "static")
@@ -69,7 +69,7 @@ async def custom_404_handler(request: Request, _exc: HTTPException):
     if os.path.exists(index_path):
         return FileResponse(index_path)
 
-    return {"detail": "Not Found"}
+    return JSONResponse(status_code=404, content={"detail": "Not Found"})
 
 
 # Serve root and frontend routes
@@ -87,7 +87,7 @@ async def serve_root():
 async def serve_frontend(full_path: str):
     # Don't intercept API routes - let them return 404 properly
     if full_path.startswith("api/") or full_path.startswith("api"):
-        raise HTTPException(status_code=404, detail="API route not found")
+        return JSONResponse(status_code=404, content={"detail": "API route not found"})
     
     static_dir = os.path.join(os.path.dirname(__file__), "static")
 
@@ -101,4 +101,4 @@ async def serve_frontend(full_path: str):
     if os.path.exists(index_path):
         return FileResponse(index_path)
 
-    return {"message": "Frontend not found"}
+    return JSONResponse(status_code=404, content={"detail": "Frontend not found"})
