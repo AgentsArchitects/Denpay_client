@@ -9,13 +9,13 @@ export const API_ENDPOINTS = {
 
   // Clients
   CLIENTS: {
-    LIST: '/clients',
-    CREATE: '/clients',
-    GET: (id: string) => `/clients/${id}`,
-    UPDATE: (id: string) => `/clients/${id}`,
-    DELETE: (id: string) => `/clients/${id}`,
-    USERS: (id: string) => `/clients/${id}/users`,
-    CREATE_USER: (id: string) => `/clients/${id}/users`,
+    LIST: '/clients/',
+    CREATE: '/clients//',
+    GET: (id: string) => `/clients/${id}/`,
+    UPDATE: (id: string) => `/clients/${id}/`,
+    DELETE: (id: string) => `/clients/${id}/`,
+    USERS: (id: string) => `/clients/${id}/users/`,
+    CREATE_USER: (id: string) => `/clients/${id}/users/`,
   },
 
   // Users
