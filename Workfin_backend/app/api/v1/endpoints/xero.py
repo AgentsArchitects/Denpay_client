@@ -170,13 +170,13 @@ async def xero_callback(
             # Don't raise - the OAuth flow succeeded
 
         # Redirect to frontend success page
-        return RedirectResponse(url="http://localhost:5174/xero/list?xero=connected")
+        return RedirectResponse(url="https://api-uat-uk-workfin-02.azurewebsites.net/xero/list?xero=connected")
 
     except Exception as e:
         # Only redirect with error if the OAuth flow itself failed
         error_msg = str(e)
         print(f"Xero callback error: {error_msg}")
-        return RedirectResponse(url=f"http://localhost:5174/xero/list?xero=error&message={error_msg}")
+        return RedirectResponse(url=f"https://api-uat-uk-workfin-02.azurewebsites.net/xero/list?xero=error&message={error_msg}")
 
 
 @router.get("/tenants", response_model=List[XeroTenant])

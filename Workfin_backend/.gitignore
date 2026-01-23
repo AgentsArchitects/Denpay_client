@@ -5,7 +5,7 @@ __pycache__/
 *.so
 .Python
 
-venv/
+#venv/
 ENV/
 build/
 develop-eggs/
@@ -23,7 +23,6 @@ wheels/
 *.egg
 
 # Environment
-.env
 
 # IDE
 .vscode/
@@ -40,7 +39,7 @@ wheels/
 *.log
 
 .migrations
-.env.example
+#.env.example
 .BACKEND_INTEGRATION.md
 .CLIENT_ONBOARDING_FIELD_MAPPING.md
 .CLIENT_ONBOARDING_INTEGRATION_GUIDE.md

@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api"
 
     # CORS Settings
-    CORS_ORIGINS: Union[str, List[str]] = "http://localhost:5174,http://localhost:5173"
+    CORS_ORIGINS: Union[str, List[str]] = "https://api-uat-uk-workfin-02.azurewebsites.net/"
 
     # JWT Settings
     SECRET_KEY: str = "your-secret-key-change-this-in-production"
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     # Xero Settings
     XERO_CLIENT_ID: str = ""
     XERO_CLIENT_SECRET: str = ""
-    XERO_REDIRECT_URI: str = "http://localhost:8001/api/xero/callback"
+    XERO_REDIRECT_URI: str = "https://api-uat-uk-workfin-02.azurewebsites.net/api/xero/callback"
     XERO_SCOPES: str = "openid profile email accounting.transactions accounting.contacts accounting.settings accounting.journals.read offline_access"
 
     @field_validator('CORS_ORIGINS', mode='before')
