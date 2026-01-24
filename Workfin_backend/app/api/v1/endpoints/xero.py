@@ -266,7 +266,7 @@ async def get_xero_status():
 # Data Sync Endpoints
 # ==================
 
-@router.post("/sync/accounts", response_model=XeroSyncResponse)
+@router.post("/sync/accounts/", response_model=XeroSyncResponse)
 async def sync_accounts(
     tenant_id: str = Query(..., description="Xero tenant ID"),
     db: AsyncSession = Depends(get_db)
@@ -327,7 +327,7 @@ async def sync_accounts(
         )
 
 
-@router.post("/sync/contacts", response_model=XeroSyncResponse)
+@router.post("/sync/contacts/", response_model=XeroSyncResponse)
 async def sync_contacts(
     tenant_id: str = Query(..., description="Xero tenant ID"),
     db: AsyncSession = Depends(get_db)
@@ -397,7 +397,7 @@ async def sync_contacts(
         )
 
 
-@router.post("/sync/contact-groups", response_model=XeroSyncResponse)
+@router.post("/sync/contact-groups/", response_model=XeroSyncResponse)
 async def sync_contact_groups(
     tenant_id: str = Query(..., description="Xero tenant ID"),
     db: AsyncSession = Depends(get_db)
@@ -442,7 +442,7 @@ async def sync_contact_groups(
         )
 
 
-@router.post("/sync/invoices", response_model=XeroSyncResponse)
+@router.post("/sync/invoices/", response_model=XeroSyncResponse)
 async def sync_invoices(
     tenant_id: str = Query(..., description="Xero tenant ID"),
     db: AsyncSession = Depends(get_db)
@@ -529,7 +529,7 @@ async def sync_invoices(
         )
 
 
-@router.post("/sync/credit-notes", response_model=XeroSyncResponse)
+@router.post("/sync/credit-notes/", response_model=XeroSyncResponse)
 async def sync_credit_notes(
     tenant_id: str = Query(..., description="Xero tenant ID"),
     db: AsyncSession = Depends(get_db)
@@ -599,7 +599,7 @@ async def sync_credit_notes(
         )
 
 
-@router.post("/sync/payments", response_model=XeroSyncResponse)
+@router.post("/sync/payments/", response_model=XeroSyncResponse)
 async def sync_payments(
     tenant_id: str = Query(..., description="Xero tenant ID"),
     db: AsyncSession = Depends(get_db)
@@ -672,7 +672,7 @@ async def sync_payments(
         )
 
 
-@router.post("/sync/bank-transactions", response_model=XeroSyncResponse)
+@router.post("/sync/bank-transactions/", response_model=XeroSyncResponse)
 async def sync_bank_transactions(
     tenant_id: str = Query(..., description="Xero tenant ID"),
     db: AsyncSession = Depends(get_db)
@@ -748,7 +748,7 @@ async def sync_bank_transactions(
         )
 
 
-@router.post("/sync/bank-transfers", response_model=XeroSyncResponse)
+@router.post("/sync/bank-transfers/", response_model=XeroSyncResponse)
 async def sync_bank_transfers(
     tenant_id: str = Query(..., description="Xero tenant ID"),
     db: AsyncSession = Depends(get_db)
@@ -800,7 +800,7 @@ async def sync_bank_transfers(
         )
 
 
-@router.post("/sync/journals", response_model=XeroSyncResponse)
+@router.post("/sync/journals/", response_model=XeroSyncResponse)
 async def sync_journals(
     tenant_id: str = Query(..., description="Xero tenant ID"),
     db: AsyncSession = Depends(get_db)
@@ -896,7 +896,7 @@ async def sync_journals(
         )
 
 
-@router.post("/sync/quick", response_model=List[XeroSyncResponse])
+@router.post("/sync/quick/", response_model=List[XeroSyncResponse])
 async def sync_quick_xero_data(
     tenant_id: str = Query(..., description="Xero tenant ID"),
     limit: int = Query(default=20, ge=1, le=100, description="Max records per entity"),
@@ -1248,7 +1248,7 @@ async def sync_quick_xero_data(
     return results
 
 
-@router.post("/sync/all", response_model=List[XeroSyncResponse])
+@router.post("/sync/all/", response_model=List[XeroSyncResponse])
 async def sync_all_xero_data(
     tenant_id: str = Query(..., description="Xero tenant ID"),
     limit: int = Query(default=0, ge=0, description="Max records per entity (0 = unlimited)"),
