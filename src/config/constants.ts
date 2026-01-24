@@ -93,27 +93,27 @@ export const API_ENDPOINTS = {
   CLIENTS: {
     LIST: '/clients/',
     CREATE: '/clients/',
-    GET: (id: string) => `/clients/${id}/`,
-    UPDATE: (id: string) => `/clients/${id}/`,
-    DELETE: (id: string) => `/clients/${id}/`,
-    USERS: (id: string) => `/clients/${id}/users/`,
-    CREATE_USER: (id: string) => `/clients/${id}/users/`,
+    GET: (id: string) => `/clients/${id}`,
+    UPDATE: (id: string) => `/clients/${id}`,
+    DELETE: (id: string) => `/clients/${id}`,
+    USERS: (id: string) => `/clients/${id}/users`,
+    CREATE_USER: (id: string) => `/clients/${id}/users`,
   },
   // Users
   USERS: {
     LIST: '/users/',
     CREATE: '/users/',
-    GET: (id: string) => `/users/${id}/`,
-    UPDATE: (id: string) => `/users/${id}/`,
-    DELETE: (id: string) => `/users/${id}/`,
+    GET: (id: string) => `/users/${id}`,
+    UPDATE: (id: string) => `/users/${id}`,
+    DELETE: (id: string) => `/users/${id}`,
   },
   // Compass
   COMPASS: {
     LIST: '/compass/dates/',
     CREATE: '/compass/dates/',
-    GET: (id: string) => `/compass/dates/${id}/`,
-    UPDATE: (id: string) => `/compass/dates/${id}/`,
-    DELETE: (id: string) => `/compass/dates/${id}/`,
+    GET: (id: string) => `/compass/dates/${id}`,
+    UPDATE: (id: string) => `/compass/dates/${id}`,
+    DELETE: (id: string) => `/compass/dates/${id}`,
   },
   // Xero
   XERO: {
@@ -124,7 +124,7 @@ export const API_ENDPOINTS = {
     STATUS: '/xero/status/',
     CONNECT: '/xero/connect/',
     DISCONNECT: '/xero/disconnect/',
-    GET: (id: string) => `/xero/${id}/`,
+    GET: (id: string) => `/xero/${id}`,
     SYNC: {
       ALL: '/xero/sync/all/',
       QUICK: '/xero/sync/quick/',
