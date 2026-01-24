@@ -1304,6 +1304,8 @@ async def get_xero_accounts(
 ):
     """Get synced accounts from database"""
     try:
+        print(f"Getting accounts for tenant_id: {tenant_id}, page: {page}, page_size: {page_size}")
+
         query = select(XeroAccount)
         if tenant_id:
             query = query.where(XeroAccount.tenant_id == tenant_id)
@@ -1316,6 +1318,8 @@ async def get_xero_accounts(
         count_result = await db.execute(count_query)
         total = len(count_result.scalars().all())
 
+        print(f"Total accounts found: {total}")
+
         # Apply pagination
         offset = (page - 1) * page_size
         query = query.offset(offset).limit(page_size)
@@ -1323,7 +1327,9 @@ async def get_xero_accounts(
         result = await db.execute(query)
         accounts = result.scalars().all()
 
-        return {
+        print(f"Retrieved {len(accounts)} accounts for current page")
+
+        response_data = {
             "data": [
                 {
                     "id": str(acc.id),
@@ -1345,7 +1351,14 @@ async def get_xero_accounts(
             "page_size": page_size,
             "total_pages": (total + page_size - 1) // page_size
         }
+
+        print(f"Successfully prepared response with {len(response_data['data'])} accounts")
+        return response_data
+
     except Exception as e:
+        import traceback
+        print(f"ERROR in get_xero_accounts: {str(e)}")
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch accounts: {str(e)}"
