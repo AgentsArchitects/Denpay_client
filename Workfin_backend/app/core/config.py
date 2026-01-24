@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     XERO_REDIRECT_URI: str = "https://api-uat-uk-workfin-02.azurewebsites.net/api/xero/callback"
     XERO_SCOPES: str = "openid profile email accounting.transactions accounting.contacts accounting.settings accounting.journals.read offline_access"
 
+    # Azure Storage Settings
+    AZURE_STORAGE_ACCOUNT_NAME: str = "synwworkfinlivesynapse"
+    AZURE_STORAGE_CONTAINER_NAME: str = "a4de6dd-esk"
+
     @field_validator('CORS_ORIGINS', mode='before')
     @classmethod
     def parse_cors_origins(cls, v):
