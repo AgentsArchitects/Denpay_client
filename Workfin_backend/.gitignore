@@ -6,7 +6,7 @@ __pycache__/
 .Python
 
 venv/
-ENV/
+# ENV/
 build/
 develop-eggs/
 downloads/
@@ -23,7 +23,7 @@ wheels/
 *.egg
 
 # Environment
-.env
+# .env
 
 # IDE
 .vscode/
