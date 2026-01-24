@@ -1,0 +1,23 @@
+# Database Configuration - Session Pooler (Working)
+DATABASE_URL=postgresql+asyncpg://postgres.ehaukxpafptcaqooltqw:Base_RJP_Work01@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres
+
+# JWT Configuration
+SECRET_KEY=your-secret-key-change-this-in-production-please-use-strong-key
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# CORS Configuration
+CORS_ORIGINS=http://localhost:5174,http://localhost:5173,http://localhost:8001
+
+# API Configuration
+API_V1_PREFIX=/api
+PROJECT_NAME=DenPay Client Onboarding API
+
+# Xero OAuth2 Configuration
+XERO_CLIENT_ID=41F63D87BF0D4F9295B97C5BF622C1FC
+XERO_CLIENT_SECRET=s5-6uIkoQeN0mrv6lQZA2X1xwrcBYIBxxgkU5deqhoN1UkxU
+XERO_REDIRECT_URI=http://localhost:8001/api/xero/callback
+XERO_SCOPES=offline_access accounting.transactions accounting.contacts accounting.settings accounting.journals.read accounting.reports.read
+
+# Encryption key for storing tokens securely
+ENCRYPTION_KEY=CMEqvmnFk9VSHtURERuvoPb4EwY_vgfLmzk8GOV7pzM=
