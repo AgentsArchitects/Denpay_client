@@ -2,13 +2,28 @@
 SOE Data API Endpoints
 """
 from typing import List, Optional
+import math
 from fastapi import APIRouter, HTTPException, Query
 from app.services.azure_blob_service import azure_blob_service
 
 router = APIRouter()
 
 
-@router.get("/tables/")
+def clean_nan_values(data: list) -> list:
+    """Replace NaN and Inf values with None for JSON serialization"""
+    cleaned = []
+    for record in data:
+        cleaned_record = {}
+        for key, value in record.items():
+            if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+                cleaned_record[key] = None
+            else:
+                cleaned_record[key] = value
+        cleaned.append(cleaned_record)
+    return cleaned
+
+
+@router.get("/tables")
 async def get_soe_tables():
     """Get list of available SOE tables"""
     try:
@@ -18,7 +33,7 @@ async def get_soe_tables():
         raise HTTPException(status_code=500, detail=f"Failed to list SOE tables: {str(e)}")
 
 
-@router.get("/data/{table_name}/")
+@router.get("/data/{table_name}")
 async def get_soe_table_data(
     table_name: str,
     limit: Optional[int] = Query(100, description="Limit number of records"),
@@ -28,17 +43,18 @@ async def get_soe_table_data(
     try:
         # Read data from blob storage
         df = azure_blob_service.get_soe_data(table_name, limit=5)  # Limit files to read
-
+        
         if df.empty:
             return {"data": [], "total": 0, "table": table_name}
-
+        
         # Apply pagination
         total = len(df)
         df = df.iloc[offset:offset + limit]
-
-        # Convert to dict
+        
+        # Convert to dict and clean NaN values
         data = df.to_dict(orient="records")
-
+        data = clean_nan_values(data)
+        
         return {
             "data": data,
             "total": total,
@@ -50,7 +66,7 @@ async def get_soe_table_data(
         raise HTTPException(status_code=500, detail=f"Failed to get SOE data: {str(e)}")
 
 
-@router.get("/patients/")
+@router.get("/patients")
 async def get_patients(
     limit: Optional[int] = Query(100, description="Limit"),
     offset: Optional[int] = Query(0, description="Offset")
@@ -59,7 +75,7 @@ async def get_patients(
     return await get_soe_table_data("vw_DimPatients", limit, offset)
 
 
-@router.get("/appointments/")
+@router.get("/appointments")
 async def get_appointments(
     limit: Optional[int] = Query(100, description="Limit"),
     offset: Optional[int] = Query(0, description="Offset")
