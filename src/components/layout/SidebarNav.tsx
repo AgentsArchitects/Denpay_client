@@ -53,7 +53,7 @@ const SidebarNav: React.FC<SidebarNavProps> = ({ collapsed }) => {
     {
       section: 'DENPAY',
       items: [
-        { key: '/denpay', icon: <DollarOutlined />, label: 'Go To Client Portal', external: true, externalUrl: 'http://34.227.71.158:5173/welcome' }
+        { key: '/denpay', icon: <DollarOutlined />, label: 'Go To Client Portal', external: true, externalUrl: 'api-uat-uk-workfin-03.azurewebsites.net' }
       ]
     },
     {
