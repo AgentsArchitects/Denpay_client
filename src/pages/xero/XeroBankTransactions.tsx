@@ -23,9 +23,7 @@ const XeroBankTransactions: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedTenant) {
-      fetchBankTransactions();
-    }
+    fetchBankTransactions();
   }, [selectedTenant, page, pageSize]);
 
   const fetchTenants = async () => {
@@ -44,7 +42,7 @@ const XeroBankTransactions: React.FC = () => {
     setLoading(true);
     try {
       const response = await xeroService.getBankTransactions({
-        tenant_id: selectedTenant,
+        tenant_id: selectedTenant || undefined,
         page,
         page_size: pageSize,
       });

@@ -24,9 +24,7 @@ const XeroContacts: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedTenant) {
-      fetchContacts();
-    }
+    fetchContacts();
   }, [selectedTenant, page, pageSize, activeTab]);
 
   const fetchTenants = async () => {
@@ -46,7 +44,7 @@ const XeroContacts: React.FC = () => {
     setLoading(true);
     try {
       const params: any = {
-        tenant_id: selectedTenant,
+        tenant_id: selectedTenant || undefined,
         page,
         page_size: pageSize,
       };

@@ -81,7 +81,16 @@ const SidebarNav: React.FC<SidebarNavProps> = ({ collapsed }) => {
             { key: '/xero/bank-transactions', label: 'Bank Transactions' },
             { key: '/xero/bank-transfers', label: 'Bank Transfers' },
             { key: '/xero/journals', label: 'Journals' },
-            { key: '/xero/journal-lines', label: 'Journal Lines' }
+            { key: '/xero/journal-lines', label: 'Journal Lines' },
+            { key: '/xero/bank-transactions-new', label: 'Bank Transactions New' },
+            { key: '/xero/invoices-new', label: 'Invoices New' },
+            { key: '/xero/invoices-new-jenc', label: 'Invoices New JENC' },
+            { key: '/xero/journal2', label: 'Journal 2' },
+            { key: '/xero/journal2-budget-template', label: 'Journal 2 Budget Template' },
+            { key: '/xero/demo-journal2', label: 'Demo Journal 2' },
+            { key: '/xero/vw-data', label: 'Data View' },
+            { key: '/xero/vw-cash-sheet', label: 'Cash Sheet' },
+            { key: '/xero/vw-related-accounts', label: 'Related Accounts' }
           ]
         }
       ]

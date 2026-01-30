@@ -23,9 +23,7 @@ const XeroContactGroups: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedTenant) {
-      fetchContactGroups();
-    }
+    fetchContactGroups();
   }, [selectedTenant, page, pageSize]);
 
   const fetchTenants = async () => {
@@ -44,7 +42,7 @@ const XeroContactGroups: React.FC = () => {
     setLoading(true);
     try {
       const response = await xeroService.getContactGroups({
-        tenant_id: selectedTenant,
+        tenant_id: selectedTenant || undefined,
         page,
         page_size: pageSize,
       });

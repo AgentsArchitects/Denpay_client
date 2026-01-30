@@ -427,6 +427,17 @@ class XeroService {
     );
     return response.data;
   }
+
+  async getCustomTableData(tableName: string, params?: {
+    page?: number;
+    page_size?: number;
+  }): Promise<PaginatedResponse<Record<string, any>>> {
+    const response = await apiClient.get<PaginatedResponse<Record<string, any>>>(
+      API_ENDPOINTS.XERO.DATA.CUSTOM(tableName),
+      { params }
+    );
+    return response.data;
+  }
 }
 
 export default new XeroService();

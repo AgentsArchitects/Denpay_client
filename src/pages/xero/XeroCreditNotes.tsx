@@ -23,9 +23,7 @@ const XeroCreditNotes: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedTenant) {
-      fetchCreditNotes();
-    }
+    fetchCreditNotes();
   }, [selectedTenant, page, pageSize]);
 
   const fetchTenants = async () => {
@@ -44,7 +42,7 @@ const XeroCreditNotes: React.FC = () => {
     setLoading(true);
     try {
       const response = await xeroService.getCreditNotes({
-        tenant_id: selectedTenant,
+        tenant_id: selectedTenant || undefined,
         page,
         page_size: pageSize,
       });

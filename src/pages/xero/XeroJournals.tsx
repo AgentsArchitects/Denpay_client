@@ -23,9 +23,7 @@ const XeroJournals: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedTenant) {
-      fetchJournals();
-    }
+    fetchJournals();
   }, [selectedTenant, page, pageSize]);
 
   const fetchTenants = async () => {
@@ -44,7 +42,7 @@ const XeroJournals: React.FC = () => {
     setLoading(true);
     try {
       const response = await xeroService.getJournals({
-        tenant_id: selectedTenant,
+        tenant_id: selectedTenant || undefined,
         page,
         page_size: pageSize,
       });

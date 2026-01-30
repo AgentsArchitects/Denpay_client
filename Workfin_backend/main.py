@@ -23,7 +23,14 @@ async def create_xero_tables():
     from sqlalchemy import text
     async with engine.begin() as conn:
         await conn.execute(text('CREATE SCHEMA IF NOT EXISTS xero'))
-        await conn.run_sync(Base.metadata.create_all)
+        # Only create xero schema tables, not all models
+        xero_tables = [
+            t for t in Base.metadata.sorted_tables
+            if t.schema == "xero"
+        ]
+        await conn.run_sync(
+            lambda sync_conn: Base.metadata.create_all(sync_conn, tables=xero_tables)
+        )
     print("Xero tables verified/created successfully.")
 
 

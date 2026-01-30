@@ -149,6 +149,7 @@ export const API_ENDPOINTS = {
       BANK_TRANSFERS: '/xero/data/bank-transfers/',
       JOURNALS: '/xero/data/journals/',
       JOURNAL_LINES: '/xero/data/journal-lines/',
+      CUSTOM: (tableName: string) => `/xero/data/custom/${tableName}/`,
     },
   },
 } as const;

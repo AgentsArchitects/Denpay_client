@@ -7,7 +7,7 @@ const apiClient: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000, // 30 seconds
+  timeout: 120000, // 120 seconds - Azure App Service can be slow on cold starts
 });
 
 // Request interceptor - add auth token to requests

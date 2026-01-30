@@ -23,9 +23,7 @@ const XeroAccounts: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedTenant) {
-      fetchAccounts();
-    }
+    fetchAccounts();
   }, [selectedTenant, page, pageSize]);
 
   const fetchTenants = async () => {
@@ -45,7 +43,7 @@ const XeroAccounts: React.FC = () => {
     setLoading(true);
     try {
       const response = await xeroService.getAccounts({
-        tenant_id: selectedTenant,
+        tenant_id: selectedTenant || undefined,
         page,
         page_size: pageSize,
       });

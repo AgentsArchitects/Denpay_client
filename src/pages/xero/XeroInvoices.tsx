@@ -25,9 +25,7 @@ const XeroInvoices: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedTenant) {
-      fetchInvoices();
-    }
+    fetchInvoices();
   }, [selectedTenant, page, pageSize, activeTab, statusFilter]);
 
   const fetchTenants = async () => {
@@ -47,7 +45,7 @@ const XeroInvoices: React.FC = () => {
     setLoading(true);
     try {
       const params: any = {
-        tenant_id: selectedTenant,
+        tenant_id: selectedTenant || undefined,
         page,
         page_size: pageSize,
       };

@@ -13,6 +13,15 @@ import XeroBankTransfers from './pages/xero/XeroBankTransfers';
 import XeroJournals from './pages/xero/XeroJournals';
 import XeroJournalLines from './pages/xero/XeroJournalLines';
 import XeroContactGroups from './pages/xero/XeroContactGroups';
+import XeroBankTransactionsNew from './pages/xero/XeroBankTransactionsNew';
+import XeroInvoicesNew from './pages/xero/XeroInvoicesNew';
+import XeroInvoicesNewJENC from './pages/xero/XeroInvoicesNewJENC';
+import XeroJournal2 from './pages/xero/XeroJournal2';
+import XeroJournal2BudgetTemplate from './pages/xero/XeroJournal2BudgetTemplate';
+import XeroDemoJournal2 from './pages/xero/XeroDemoJournal2';
+import XeroViewData from './pages/xero/XeroViewData';
+import XeroViewCashSheet from './pages/xero/XeroViewCashSheet';
+import XeroViewRelatedAccounts from './pages/xero/XeroViewRelatedAccounts';
 import ClientOnboardingList from './pages/onboarding/ClientOnboardingList';
 import ClientOnboardingUsers from './pages/onboarding/ClientOnboardingUsers';
 import ClientOnboardingCreate from './pages/onboarding/ClientOnboardingCreate';
@@ -84,6 +93,51 @@ const App: React.FC = () => {
       <Route path="/xero/bank-transfers" element={
         <DashboardLayout>
           <XeroBankTransfers />
+        </DashboardLayout>
+      } />
+      <Route path="/xero/bank-transactions-new" element={
+        <DashboardLayout>
+          <XeroBankTransactionsNew />
+        </DashboardLayout>
+      } />
+      <Route path="/xero/invoices-new" element={
+        <DashboardLayout>
+          <XeroInvoicesNew />
+        </DashboardLayout>
+      } />
+      <Route path="/xero/invoices-new-jenc" element={
+        <DashboardLayout>
+          <XeroInvoicesNewJENC />
+        </DashboardLayout>
+      } />
+      <Route path="/xero/journal2" element={
+        <DashboardLayout>
+          <XeroJournal2 />
+        </DashboardLayout>
+      } />
+      <Route path="/xero/journal2-budget-template" element={
+        <DashboardLayout>
+          <XeroJournal2BudgetTemplate />
+        </DashboardLayout>
+      } />
+      <Route path="/xero/demo-journal2" element={
+        <DashboardLayout>
+          <XeroDemoJournal2 />
+        </DashboardLayout>
+      } />
+      <Route path="/xero/vw-data" element={
+        <DashboardLayout>
+          <XeroViewData />
+        </DashboardLayout>
+      } />
+      <Route path="/xero/vw-cash-sheet" element={
+        <DashboardLayout>
+          <XeroViewCashSheet />
+        </DashboardLayout>
+      } />
+      <Route path="/xero/vw-related-accounts" element={
+        <DashboardLayout>
+          <XeroViewRelatedAccounts />
         </DashboardLayout>
       } />
       <Route path="/onboarding" element={
