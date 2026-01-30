@@ -2,13 +2,14 @@
 Xero API Endpoints
 Handles OAuth 2.0 flow and data synchronization with Xero
 """
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+from fastapi import APIRouter, HTTPException, status, Depends, Query, Path
 from fastapi.responses import RedirectResponse
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, text
 from sqlalchemy.dialects.postgresql import insert
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
+from decimal import Decimal
 import uuid
 import re
 
@@ -1893,4 +1894,84 @@ async def get_xero_bank_transfers(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch bank transfers: {str(e)}"
+        )
+
+
+# ==================
+# Generic Custom Table Endpoint
+# ==================
+
+ALLOWED_CUSTOM_TABLES: Dict[str, str] = {
+    "bank-transactions-new": '"bankTransactionsNew"',
+    "invoices-new": '"invoices_new"',
+    "invoices-new-jenc": '"invoices_newJENC"',
+    "journal2": '"Journal2"',
+    "journal2-budget-template": '"Journal2_For_Budget_Template"',
+    "demo-journal2": '"new_demo_journal2"',
+    "vw-data": '"vw_Data"',
+    "vw-cash-sheet": '"vw_data_CashSheet"',
+    "vw-related-accounts": '"vw_relatedAccounts"',
+}
+
+
+def serialize_row(row: Any) -> Dict[str, Any]:
+    """Convert a database row mapping to a JSON-serializable dict."""
+    result = {}
+    for key, value in row._mapping.items():
+        if isinstance(value, datetime):
+            result[key] = value.isoformat()
+        elif isinstance(value, date):
+            result[key] = value.isoformat()
+        elif isinstance(value, Decimal):
+            result[key] = float(value)
+        elif isinstance(value, timedelta):
+            result[key] = str(value)
+        elif isinstance(value, uuid.UUID):
+            result[key] = str(value)
+        else:
+            result[key] = value
+    return result
+
+
+@router.get("/data/custom/{table_name}/")
+async def get_custom_table_data(
+    table_name: str = Path(..., description="Custom table slug (e.g. 'bank-transactions-new')"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(50, ge=1, le=500, description="Items per page"),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get data from a custom xero schema table by its slug name."""
+    if table_name not in ALLOWED_CUSTOM_TABLES:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Table '{table_name}' not found. Allowed: {list(ALLOWED_CUSTOM_TABLES.keys())}"
+        )
+
+    actual_table = ALLOWED_CUSTOM_TABLES[table_name]
+    qualified = f'xero.{actual_table}'
+
+    try:
+        count_result = await db.execute(text(f'SELECT COUNT(*) FROM {qualified}'))
+        total = count_result.scalar() or 0
+
+        offset = (page - 1) * page_size
+        data_result = await db.execute(
+            text(f'SELECT * FROM {qualified} LIMIT :limit OFFSET :offset'),
+            {"limit": page_size, "offset": offset}
+        )
+        rows = data_result.fetchall()
+
+        return {
+            "data": [serialize_row(row) for row in rows],
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total + page_size - 1) // page_size if total > 0 else 0
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch data from '{table_name}': {str(e)}"
         )

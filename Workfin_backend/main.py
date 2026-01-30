@@ -10,14 +10,31 @@ from dotenv import load_dotenv
 # Import routers
 from app.api.v1.api import api_router
 from app.core.config import settings
+from app.db.database import engine, Base
+
+# Import all models so they are registered with Base.metadata
+from app.db import xero_models  # noqa: F401
 
 load_dotenv()
+
+
+async def create_xero_tables():
+    """Create xero schema and tables if they don't exist"""
+    from sqlalchemy import text
+    async with engine.begin() as conn:
+        await conn.execute(text('CREATE SCHEMA IF NOT EXISTS xero'))
+        await conn.run_sync(Base.metadata.create_all)
+    print("Xero tables verified/created successfully.")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     print("Starting DenPay Client Onboarding API...")
+    try:
+        await create_xero_tables()
+    except Exception as e:
+        print(f"Warning: Could not auto-create tables: {e}")
     yield
     # Shutdown
     print("Shutting down DenPay Client Onboarding API...")
