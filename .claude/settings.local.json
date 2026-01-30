@@ -8,7 +8,10 @@
       "Bash(dir:*)",
       "Bash(git fetch:*)",
       "Bash(git push:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(if exist \"d:\\\\Workfin_client_ui\\\\Workfin_backend\\\\static\" rmdir /s /q \"d:\\\\Workfin_client_ui\\\\Workfin_backend\\\\static\")",
+      "Bash(xcopy /s /e /i /y \"d:\\\\Workfin_client_ui\\\\dist\" \"d:\\\\Workfin_client_ui\\\\Workfin_backend\\\\static\")",
+      "Bash(powershell -Command:*)"
     ]
   }
 }

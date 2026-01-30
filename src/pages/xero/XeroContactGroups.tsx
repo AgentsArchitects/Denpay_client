@@ -9,6 +9,7 @@ import './XeroList.css';
 const { Option } = Select;
 
 const XeroContactGroups: React.FC = () => {
+  const shortId = (id: string) => id.replace(/-/g, '').substring(0, 8).toUpperCase();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<XeroContactGroupData[]>([]);
   const [total, setTotal] = useState(0);
@@ -30,9 +31,6 @@ const XeroContactGroups: React.FC = () => {
     try {
       const tenantList = await xeroService.getTenants();
       setTenants(tenantList);
-      if (tenantList.length > 0) {
-        setSelectedTenant(tenantList[0].tenant_id);
-      }
     } catch (error: any) {
       console.log('Tenants not available - user may need to connect to Xero');
     }
@@ -108,9 +106,10 @@ const XeroContactGroups: React.FC = () => {
             size="large"
             placeholder="Select Organization"
           >
+            <Option key="all" value="">All Organizations</Option>
             {tenants.map(tenant => (
               <Option key={tenant.tenant_id} value={tenant.tenant_id}>
-                {tenant.tenant_name}
+                {tenant.tenant_name} ({shortId(tenant.tenant_id)})
               </Option>
             ))}
           </Select>
