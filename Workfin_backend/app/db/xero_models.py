@@ -7,6 +7,14 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from app.db.database import Base
 import uuid
+import secrets
+import string
+
+
+def generate_integration_id() -> str:
+    """Generate a unique 8-character alphanumeric integration ID."""
+    alphabet = string.ascii_uppercase + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(8))
 
 # Xero schema name
 XERO_SCHEMA = "xero"
@@ -21,6 +29,7 @@ class XeroToken(Base):
     client_id = Column(UUID(as_uuid=True), nullable=False)  # Reference to clients table
     tenant_id = Column(String(100), nullable=False)  # Xero tenant/org ID
     tenant_name = Column(String(255), nullable=True)
+    integration_id = Column(String(8), nullable=True, unique=True, default=generate_integration_id)
     access_token = Column(Text, nullable=False)
     refresh_token = Column(Text, nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False)
@@ -38,6 +47,8 @@ class XeroAccount(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     account_id = Column(String(100), nullable=False, unique=True)  # Xero AccountID
     tenant_id = Column(String(100), nullable=False)
+    tenant_name = Column(String(255), nullable=True)
+    integration_id = Column(String(8), nullable=True)
     code = Column(String(50), nullable=True)
     name = Column(String(255), nullable=False)
     type = Column(String(50), nullable=True)  # BANK, CURRENT, EQUITY, etc.
@@ -68,6 +79,8 @@ class XeroContact(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     contact_id = Column(String(100), nullable=False, unique=True)  # Xero ContactID
     tenant_id = Column(String(100), nullable=False)
+    tenant_name = Column(String(255), nullable=True)
+    integration_id = Column(String(8), nullable=True)
     contact_number = Column(String(100), nullable=True)
     account_number = Column(String(100), nullable=True)
     contact_status = Column(String(50), nullable=True)  # ACTIVE, ARCHIVED
@@ -96,6 +109,8 @@ class XeroContactGroup(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     contact_group_id = Column(String(100), nullable=False, unique=True)
     tenant_id = Column(String(100), nullable=False)
+    tenant_name = Column(String(255), nullable=True)
+    integration_id = Column(String(8), nullable=True)
     name = Column(String(255), nullable=False)
     status = Column(String(50), nullable=True)  # ACTIVE, DELETED
     raw_data = Column(JSONB, nullable=True)
@@ -110,6 +125,8 @@ class XeroInvoice(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     invoice_id = Column(String(100), nullable=False, unique=True)  # Xero InvoiceID
     tenant_id = Column(String(100), nullable=False)
+    tenant_name = Column(String(255), nullable=True)
+    integration_id = Column(String(8), nullable=True)
     type = Column(String(50), nullable=True)  # ACCPAY, ACCREC
     invoice_number = Column(String(100), nullable=True)
     reference = Column(String(255), nullable=True)
@@ -147,6 +164,8 @@ class XeroCreditNote(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     credit_note_id = Column(String(100), nullable=False, unique=True)
     tenant_id = Column(String(100), nullable=False)
+    tenant_name = Column(String(255), nullable=True)
+    integration_id = Column(String(8), nullable=True)
     type = Column(String(50), nullable=True)  # ACCPAYCREDIT, ACCRECCREDIT
     credit_note_number = Column(String(100), nullable=True)
     reference = Column(String(255), nullable=True)
@@ -175,6 +194,8 @@ class XeroPayment(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     payment_id = Column(String(100), nullable=False, unique=True)
     tenant_id = Column(String(100), nullable=False)
+    tenant_name = Column(String(255), nullable=True)
+    integration_id = Column(String(8), nullable=True)
     date = Column(Date, nullable=True)
     currency_rate = Column(Numeric(18, 6), nullable=True)
     amount = Column(Numeric(18, 2), nullable=True)
@@ -200,6 +221,8 @@ class XeroBankTransaction(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     bank_transaction_id = Column(String(100), nullable=False, unique=True)
     tenant_id = Column(String(100), nullable=False)
+    tenant_name = Column(String(255), nullable=True)
+    integration_id = Column(String(8), nullable=True)
     type = Column(String(50), nullable=True)  # RECEIVE, SPEND, etc.
     contact_id = Column(String(100), nullable=True)
     contact_name = Column(String(500), nullable=True)
@@ -228,6 +251,8 @@ class XeroBankTransfer(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     bank_transfer_id = Column(String(100), nullable=False, unique=True)
     tenant_id = Column(String(100), nullable=False)
+    tenant_name = Column(String(255), nullable=True)
+    integration_id = Column(String(8), nullable=True)
     from_bank_account_id = Column(String(100), nullable=True)
     to_bank_account_id = Column(String(100), nullable=True)
     from_bank_transaction_id = Column(String(100), nullable=True)
@@ -249,6 +274,8 @@ class XeroJournal(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     journal_id = Column(String(100), nullable=False, unique=True)
     tenant_id = Column(String(100), nullable=False)
+    tenant_name = Column(String(255), nullable=True)
+    integration_id = Column(String(8), nullable=True)
     journal_date = Column(Date, nullable=True)
     journal_number = Column(Integer, nullable=True)
     created_date_utc = Column(DateTime(timezone=True), nullable=True)
@@ -268,6 +295,8 @@ class XeroJournalLine(Base):
     journal_line_id = Column(String(100), nullable=False, unique=True)
     journal_id = Column(String(100), nullable=False)
     tenant_id = Column(String(100), nullable=False)
+    tenant_name = Column(String(255), nullable=True)
+    integration_id = Column(String(8), nullable=True)
     account_id = Column(String(100), nullable=True)
     account_code = Column(String(50), nullable=True)
     account_type = Column(String(50), nullable=True)

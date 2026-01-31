@@ -40,6 +40,9 @@ export interface PaginatedResponse<T> {
 
 export interface XeroAccountData {
   id: string;
+  tenant_id: string;
+  tenant_name: string | null;
+  integration_id: string | null;
   account_id: string;
   code: string | null;
   name: string;
@@ -54,6 +57,9 @@ export interface XeroAccountData {
 
 export interface XeroContactData {
   id: string;
+  tenant_id: string;
+  tenant_name: string | null;
+  integration_id: string | null;
   contact_id: string;
   name: string;
   first_name: string | null;
@@ -69,6 +75,9 @@ export interface XeroContactData {
 
 export interface XeroInvoiceData {
   id: string;
+  tenant_id: string;
+  tenant_name: string | null;
+  integration_id: string | null;
   invoice_id: string;
   invoice_number: string | null;
   type: string | null;
@@ -86,6 +95,9 @@ export interface XeroInvoiceData {
 
 export interface XeroCreditNoteData {
   id: string;
+  tenant_id: string;
+  tenant_name: string | null;
+  integration_id: string | null;
   credit_note_id: string;
   credit_note_number: string | null;
   type: string | null;
@@ -101,6 +113,9 @@ export interface XeroCreditNoteData {
 
 export interface XeroPaymentData {
   id: string;
+  tenant_id: string;
+  tenant_name: string | null;
+  integration_id: string | null;
   payment_id: string;
   date: string | null;
   amount: number;
@@ -113,6 +128,9 @@ export interface XeroPaymentData {
 
 export interface XeroBankTransactionData {
   id: string;
+  tenant_id: string;
+  tenant_name: string | null;
+  integration_id: string | null;
   bank_transaction_id: string;
   type: string | null;
   contact_name: string | null;
@@ -127,6 +145,9 @@ export interface XeroBankTransactionData {
 
 export interface XeroJournalData {
   id: string;
+  tenant_id: string;
+  tenant_name: string | null;
+  integration_id: string | null;
   journal_id: string;
   journal_number: number | null;
   journal_date: string | null;
@@ -137,6 +158,9 @@ export interface XeroJournalData {
 
 export interface XeroJournalLineData {
   id: string;
+  tenant_id: string;
+  tenant_name: string | null;
+  integration_id: string | null;
   journal_line_id: string;
   journal_id: string;
   account_id: string | null;
@@ -154,6 +178,9 @@ export interface XeroJournalLineData {
 
 export interface XeroContactGroupData {
   id: string;
+  tenant_id: string;
+  tenant_name: string | null;
+  integration_id: string | null;
   contact_group_id: string;
   name: string;
   status: string | null;
@@ -162,6 +189,9 @@ export interface XeroContactGroupData {
 
 export interface XeroBankTransferData {
   id: string;
+  tenant_id: string;
+  tenant_name: string | null;
+  integration_id: string | null;
   bank_transfer_id: string;
   from_bank_account_id: string | null;
   to_bank_account_id: string | null;

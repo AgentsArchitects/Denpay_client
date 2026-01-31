@@ -88,11 +88,23 @@ from app.db.xero_models import (
     XeroBankTransaction,
     XeroBankTransfer,
     XeroJournal,
-    XeroJournalLine
+    XeroJournalLine,
+    generate_integration_id
 )
 from app.services.xero_service import xero_service
 
 router = APIRouter()
+
+
+async def _get_tenant_info(db: AsyncSession, tenant_id: str) -> dict:
+    """Look up tenant_name and integration_id from the tokens table for a given tenant_id."""
+    result = await db.execute(
+        select(XeroToken.tenant_name, XeroToken.integration_id).where(XeroToken.tenant_id == tenant_id).limit(1)
+    )
+    row = result.first()
+    if row:
+        return {"tenant_name": row[0], "integration_id": row[1]}
+    return {"tenant_name": None, "integration_id": None}
 
 
 # ==================
@@ -131,10 +143,12 @@ async def xero_callback(
         # The tokens are already stored in memory by exchange_code_for_tokens
         try:
             for tenant in tenants:
+                integration_id = generate_integration_id()
                 token_record = XeroToken(
                     client_id=uuid.UUID(state) if state != "default" else uuid.uuid4(),
                     tenant_id=tenant["tenantId"],
                     tenant_name=tenant.get("tenantName"),
+                    integration_id=integration_id,
                     access_token=tokens["access_token"],
                     refresh_token=tokens["refresh_token"],
                     expires_at=tokens["expires_at"],
@@ -147,6 +161,7 @@ async def xero_callback(
                     client_id=token_record.client_id,
                     tenant_id=token_record.tenant_id,
                     tenant_name=token_record.tenant_name,
+                    integration_id=token_record.integration_id,
                     access_token=token_record.access_token,
                     refresh_token=token_record.refresh_token,
                     expires_at=token_record.expires_at,
@@ -274,6 +289,9 @@ async def sync_accounts(
 ):
     """Sync Chart of Accounts from Xero"""
     try:
+        tenant_info = await _get_tenant_info(db, tenant_id)
+        tenant_name = tenant_info["tenant_name"]
+        integration_id = tenant_info["integration_id"]
         accounts = await xero_service.get_accounts(tenant_id)
         synced_count = 0
 
@@ -281,6 +299,8 @@ async def sync_accounts(
             stmt = insert(XeroAccount).values(
                 account_id=account["AccountID"],
                 tenant_id=tenant_id,
+                tenant_name=tenant_name,
+                integration_id=integration_id,
                 code=account.get("Code"),
                 name=account.get("Name"),
                 type=account.get("Type"),
@@ -335,6 +355,9 @@ async def sync_contacts(
 ):
     """Sync Contacts from Xero"""
     try:
+        tenant_info = await _get_tenant_info(db, tenant_id)
+        tenant_name = tenant_info["tenant_name"]
+        integration_id = tenant_info["integration_id"]
         all_contacts = []
         page = 1
 
@@ -353,6 +376,8 @@ async def sync_contacts(
             stmt = insert(XeroContact).values(
                 contact_id=contact["ContactID"],
                 tenant_id=tenant_id,
+                tenant_name=tenant_name,
+                integration_id=integration_id,
                 contact_number=contact.get("ContactNumber"),
                 account_number=contact.get("AccountNumber"),
                 contact_status=contact.get("ContactStatus"),
@@ -405,6 +430,9 @@ async def sync_contact_groups(
 ):
     """Sync Contact Groups from Xero"""
     try:
+        tenant_info = await _get_tenant_info(db, tenant_id)
+        tenant_name = tenant_info["tenant_name"]
+        integration_id = tenant_info["integration_id"]
         groups = await xero_service.get_contact_groups(tenant_id)
         synced_count = 0
 
@@ -412,6 +440,8 @@ async def sync_contact_groups(
             stmt = insert(XeroContactGroup).values(
                 contact_group_id=group["ContactGroupID"],
                 tenant_id=tenant_id,
+                tenant_name=tenant_name,
+                integration_id=integration_id,
                 name=group.get("Name"),
                 status=group.get("Status"),
                 raw_data=group,
@@ -450,6 +480,9 @@ async def sync_invoices(
 ):
     """Sync Invoices from Xero"""
     try:
+        tenant_info = await _get_tenant_info(db, tenant_id)
+        tenant_name = tenant_info["tenant_name"]
+        integration_id = tenant_info["integration_id"]
         all_invoices = []
         page = 1
 
@@ -470,6 +503,8 @@ async def sync_invoices(
             stmt = insert(XeroInvoice).values(
                 invoice_id=invoice["InvoiceID"],
                 tenant_id=tenant_id,
+                tenant_name=tenant_name,
+                integration_id=integration_id,
                 type=invoice.get("Type"),
                 invoice_number=invoice.get("InvoiceNumber"),
                 reference=invoice.get("Reference"),
@@ -537,6 +572,9 @@ async def sync_credit_notes(
 ):
     """Sync Credit Notes from Xero"""
     try:
+        tenant_info = await _get_tenant_info(db, tenant_id)
+        tenant_name = tenant_info["tenant_name"]
+        integration_id = tenant_info["integration_id"]
         all_credit_notes = []
         page = 1
 
@@ -555,6 +593,8 @@ async def sync_credit_notes(
             stmt = insert(XeroCreditNote).values(
                 credit_note_id=cn["CreditNoteID"],
                 tenant_id=tenant_id,
+                tenant_name=tenant_name,
+                integration_id=integration_id,
                 type=cn.get("Type"),
                 credit_note_number=cn.get("CreditNoteNumber"),
                 reference=cn.get("Reference"),
@@ -607,6 +647,9 @@ async def sync_payments(
 ):
     """Sync Payments from Xero"""
     try:
+        tenant_info = await _get_tenant_info(db, tenant_id)
+        tenant_name = tenant_info["tenant_name"]
+        integration_id = tenant_info["integration_id"]
         all_payments = []
         page = 1
 
@@ -628,6 +671,8 @@ async def sync_payments(
             stmt = insert(XeroPayment).values(
                 payment_id=payment["PaymentID"],
                 tenant_id=tenant_id,
+                tenant_name=tenant_name,
+                integration_id=integration_id,
                 date=parse_xero_date(payment.get("Date")),
                 currency_rate=payment.get("CurrencyRate"),
                 amount=payment.get("Amount"),
@@ -680,6 +725,9 @@ async def sync_bank_transactions(
 ):
     """Sync Bank Transactions from Xero"""
     try:
+        tenant_info = await _get_tenant_info(db, tenant_id)
+        tenant_name = tenant_info["tenant_name"]
+        integration_id = tenant_info["integration_id"]
         all_transactions = []
         page = 1
 
@@ -701,6 +749,8 @@ async def sync_bank_transactions(
             stmt = insert(XeroBankTransaction).values(
                 bank_transaction_id=txn["BankTransactionID"],
                 tenant_id=tenant_id,
+                tenant_name=tenant_name,
+                integration_id=integration_id,
                 type=txn.get("Type"),
                 contact_id=contact.get("ContactID"),
                 contact_name=contact.get("Name"),
@@ -756,6 +806,9 @@ async def sync_bank_transfers(
 ):
     """Sync Bank Transfers from Xero"""
     try:
+        tenant_info = await _get_tenant_info(db, tenant_id)
+        tenant_name = tenant_info["tenant_name"]
+        integration_id = tenant_info["integration_id"]
         transfers = await xero_service.get_bank_transfers(tenant_id)
         synced_count = 0
 
@@ -765,6 +818,8 @@ async def sync_bank_transfers(
             stmt = insert(XeroBankTransfer).values(
                 bank_transfer_id=transfer["BankTransferID"],
                 tenant_id=tenant_id,
+                tenant_name=tenant_name,
+                integration_id=integration_id,
                 from_bank_account_id=from_bank.get("AccountID"),
                 to_bank_account_id=to_bank.get("AccountID"),
                 from_bank_transaction_id=transfer.get("FromBankTransactionID"),
@@ -808,6 +863,9 @@ async def sync_journals(
 ):
     """Sync Journals from Xero (requires accounting.journals.read scope)"""
     try:
+        tenant_info = await _get_tenant_info(db, tenant_id)
+        tenant_name = tenant_info["tenant_name"]
+        integration_id = tenant_info["integration_id"]
         all_journals = []
         offset = 0
 
@@ -829,6 +887,8 @@ async def sync_journals(
             stmt = insert(XeroJournal).values(
                 journal_id=journal["JournalID"],
                 tenant_id=tenant_id,
+                tenant_name=tenant_name,
+                integration_id=integration_id,
                 journal_date=parse_xero_date(journal.get("JournalDate")),
                 journal_number=journal.get("JournalNumber"),
                 created_date_utc=parse_xero_datetime(journal.get("CreatedDateUTC")),
@@ -854,6 +914,8 @@ async def sync_journals(
                     journal_line_id=line["JournalLineID"],
                     journal_id=journal["JournalID"],
                     tenant_id=tenant_id,
+                    tenant_name=tenant_name,
+                    integration_id=integration_id,
                     account_id=line.get("AccountID"),
                     account_code=line.get("AccountCode"),
                     account_type=line.get("AccountType"),
@@ -909,6 +971,9 @@ async def sync_quick_xero_data(
     bank transactions, journals) but limits each to the specified number of records.
     """
     results = []
+    tenant_info = await _get_tenant_info(db, tenant_id)
+    tenant_name = tenant_info["tenant_name"]
+    integration_id = tenant_info["integration_id"]
 
     # Sync accounts (usually not many, sync all)
     try:
@@ -918,6 +983,8 @@ async def sync_quick_xero_data(
             stmt = insert(XeroAccount).values(
                 account_id=account["AccountID"],
                 tenant_id=tenant_id,
+                tenant_name=tenant_name,
+                integration_id=integration_id,
                 code=account.get("Code"),
                 name=account.get("Name"),
                 type=account.get("Type"),
@@ -959,6 +1026,8 @@ async def sync_quick_xero_data(
             stmt = insert(XeroContact).values(
                 contact_id=contact["ContactID"],
                 tenant_id=tenant_id,
+                tenant_name=tenant_name,
+                integration_id=integration_id,
                 contact_number=contact.get("ContactNumber"),
                 account_number=contact.get("AccountNumber"),
                 contact_status=contact.get("ContactStatus"),
@@ -999,6 +1068,8 @@ async def sync_quick_xero_data(
             stmt = insert(XeroInvoice).values(
                 invoice_id=invoice["InvoiceID"],
                 tenant_id=tenant_id,
+                tenant_name=tenant_name,
+                integration_id=integration_id,
                 type=invoice.get("Type"),
                 invoice_number=invoice.get("InvoiceNumber"),
                 reference=invoice.get("Reference"),
@@ -1048,6 +1119,8 @@ async def sync_quick_xero_data(
             stmt = insert(XeroCreditNote).values(
                 credit_note_id=cn["CreditNoteID"],
                 tenant_id=tenant_id,
+                tenant_name=tenant_name,
+                integration_id=integration_id,
                 type=cn.get("Type"),
                 credit_note_number=cn.get("CreditNoteNumber"),
                 reference=cn.get("Reference"),
@@ -1089,6 +1162,8 @@ async def sync_quick_xero_data(
             stmt = insert(XeroPayment).values(
                 payment_id=payment["PaymentID"],
                 tenant_id=tenant_id,
+                tenant_name=tenant_name,
+                integration_id=integration_id,
                 date=parse_xero_date(payment.get("Date")),
                 currency_rate=payment.get("CurrencyRate"),
                 amount=payment.get("Amount"),
@@ -1127,6 +1202,8 @@ async def sync_quick_xero_data(
             stmt = insert(XeroBankTransaction).values(
                 bank_transaction_id=txn["BankTransactionID"],
                 tenant_id=tenant_id,
+                tenant_name=tenant_name,
+                integration_id=integration_id,
                 type=txn.get("Type"),
                 contact_id=contact.get("ContactID"),
                 contact_name=contact.get("Name"),
@@ -1166,6 +1243,8 @@ async def sync_quick_xero_data(
             stmt = insert(XeroJournal).values(
                 journal_id=journal["JournalID"],
                 tenant_id=tenant_id,
+                tenant_name=tenant_name,
+                integration_id=integration_id,
                 journal_date=parse_xero_date(journal.get("JournalDate")),
                 journal_number=journal.get("JournalNumber"),
                 created_date_utc=parse_xero_datetime(journal.get("CreatedDateUTC")),
@@ -1195,6 +1274,8 @@ async def sync_quick_xero_data(
             stmt = insert(XeroContactGroup).values(
                 contact_group_id=group["ContactGroupID"],
                 tenant_id=tenant_id,
+                tenant_name=tenant_name,
+                integration_id=integration_id,
                 name=group.get("Name"),
                 status=group.get("Status"),
                 raw_data=group,
@@ -1222,6 +1303,8 @@ async def sync_quick_xero_data(
             stmt = insert(XeroBankTransfer).values(
                 bank_transfer_id=transfer["BankTransferID"],
                 tenant_id=tenant_id,
+                tenant_name=tenant_name,
+                integration_id=integration_id,
                 from_bank_account_id=from_bank.get("AccountID"),
                 to_bank_account_id=to_bank.get("AccountID"),
                 from_bank_transaction_id=transfer.get("FromBankTransactionID"),
@@ -1334,6 +1417,9 @@ async def get_xero_accounts(
             "data": [
                 {
                     "id": str(acc.id),
+                    "tenant_id": acc.tenant_id,
+                    "tenant_name": acc.tenant_name,
+                    "integration_id": acc.integration_id,
                     "account_id": acc.account_id,
                     "code": acc.code,
                     "name": acc.name,
@@ -1408,6 +1494,9 @@ async def get_xero_contacts(
             "data": [
                 {
                     "id": str(c.id),
+                    "tenant_id": c.tenant_id,
+                    "tenant_name": c.tenant_name,
+                    "integration_id": c.integration_id,
                     "contact_id": c.contact_id,
                     "name": c.name,
                     "first_name": c.first_name,
@@ -1476,6 +1565,9 @@ async def get_xero_invoices(
             "data": [
                 {
                     "id": str(inv.id),
+                    "tenant_id": inv.tenant_id,
+                    "tenant_name": inv.tenant_name,
+                    "integration_id": inv.integration_id,
                     "invoice_id": inv.invoice_id,
                     "invoice_number": inv.invoice_number,
                     "type": inv.type,
@@ -1536,6 +1628,9 @@ async def get_xero_credit_notes(
             "data": [
                 {
                     "id": str(cn.id),
+                    "tenant_id": cn.tenant_id,
+                    "tenant_name": cn.tenant_name,
+                    "integration_id": cn.integration_id,
                     "credit_note_id": cn.credit_note_id,
                     "credit_note_number": cn.credit_note_number,
                     "type": cn.type,
@@ -1594,6 +1689,9 @@ async def get_xero_payments(
             "data": [
                 {
                     "id": str(p.id),
+                    "tenant_id": p.tenant_id,
+                    "tenant_name": p.tenant_name,
+                    "integration_id": p.integration_id,
                     "payment_id": p.payment_id,
                     "date": p.date.isoformat() if p.date else None,
                     "amount": float(p.amount) if p.amount else 0,
@@ -1649,6 +1747,9 @@ async def get_xero_bank_transactions(
             "data": [
                 {
                     "id": str(t.id),
+                    "tenant_id": t.tenant_id,
+                    "tenant_name": t.tenant_name,
+                    "integration_id": t.integration_id,
                     "bank_transaction_id": t.bank_transaction_id,
                     "type": t.type,
                     "contact_name": t.contact_name,
@@ -1706,6 +1807,9 @@ async def get_xero_journals(
             "data": [
                 {
                     "id": str(j.id),
+                    "tenant_id": j.tenant_id,
+                    "tenant_name": j.tenant_name,
+                    "integration_id": j.integration_id,
                     "journal_id": j.journal_id,
                     "journal_number": j.journal_number,
                     "journal_date": j.journal_date.isoformat() if j.journal_date else None,
@@ -1764,6 +1868,9 @@ async def get_xero_journal_lines(
             "data": [
                 {
                     "id": str(line.id),
+                    "tenant_id": line.tenant_id,
+                    "tenant_name": line.tenant_name,
+                    "integration_id": line.integration_id,
                     "journal_line_id": line.journal_line_id,
                     "journal_id": line.journal_id,
                     "account_id": line.account_id,
@@ -1824,6 +1931,9 @@ async def get_xero_contact_groups(
             "data": [
                 {
                     "id": str(g.id),
+                    "tenant_id": g.tenant_id,
+                    "tenant_name": g.tenant_name,
+                    "integration_id": g.integration_id,
                     "contact_group_id": g.contact_group_id,
                     "name": g.name,
                     "status": g.status,
@@ -1875,6 +1985,9 @@ async def get_xero_bank_transfers(
             "data": [
                 {
                     "id": str(t.id),
+                    "tenant_id": t.tenant_id,
+                    "tenant_name": t.tenant_name,
+                    "integration_id": t.integration_id,
                     "bank_transfer_id": t.bank_transfer_id,
                     "from_bank_account_id": t.from_bank_account_id,
                     "to_bank_account_id": t.to_bank_account_id,

@@ -107,6 +107,27 @@ const XeroJournals: React.FC = () => {
       width: 180,
       render: (date) => date ? new Date(date).toLocaleString() : '-',
     },
+    {
+      title: 'Tenant',
+      dataIndex: 'tenant_name',
+      key: 'tenant_name',
+      width: 150,
+      render: (name: string) => name || '-',
+    },
+    {
+      title: 'Integration ID',
+      dataIndex: 'integration_id',
+      key: 'integration_id',
+      width: 120,
+      render: (id: string) => id || '-',
+    },
+    {
+      title: 'Tenant ID',
+      dataIndex: 'tenant_id',
+      key: 'tenant_id',
+      width: 120,
+      render: (id: string) => id ? shortId(id) : '-',
+    },
   ];
 
   return (

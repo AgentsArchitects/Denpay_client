@@ -11,7 +11,9 @@
       "Bash(npm run build:*)",
       "Bash(if exist \"d:\\\\Workfin_client_ui\\\\Workfin_backend\\\\static\" rmdir /s /q \"d:\\\\Workfin_client_ui\\\\Workfin_backend\\\\static\")",
       "Bash(xcopy /s /e /i /y \"d:\\\\Workfin_client_ui\\\\dist\" \"d:\\\\Workfin_client_ui\\\\Workfin_backend\\\\static\")",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(powershell -File -:*)",
+      "Bash(powershell:*)"
     ]
   }
 }
