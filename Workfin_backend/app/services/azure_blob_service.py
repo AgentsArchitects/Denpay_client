@@ -51,12 +51,15 @@ class AzureBlobService:
         return sorted(list(folders))
 
     def list_files(self, prefix: str) -> List[str]:
-        """List files in a path"""
+        """List files in a path, excluding Delta Lake metadata"""
         container_client = self._get_container_client()
         files = []
 
         blobs = container_client.list_blobs(name_starts_with=prefix)
         for blob in blobs:
+            # Exclude Delta Lake transaction log and metadata files
+            if '_delta_log' in blob.name:
+                continue
             if blob.name.endswith('.parquet'):
                 files.append(blob.name)
 
@@ -102,10 +105,31 @@ class AzureBlobService:
 
         return pd.concat(dfs, ignore_index=True)
 
-    def get_soe_data(self, table_name: str, limit: Optional[int] = None) -> pd.DataFrame:
-        """Get SOE data by table name"""
+    def get_soe_data(
+        self,
+        table_name: str,
+        limit: Optional[int] = None,
+        integration_id: Optional[str] = None
+    ) -> pd.DataFrame:
+        """
+        Get SOE data by table name, with optional filtering by integration_id
+
+        Args:
+            table_name: Name of the SOE table (e.g., 'vw_DimPatients')
+            limit: Limit number of files to read (not records)
+            integration_id: Filter records by integration_id column
+
+        Returns:
+            DataFrame with the requested data
+        """
         folder_path = f"gold/soe/{table_name}/"
-        return self.read_parquet_folder(folder_path, limit)
+        df = self.read_parquet_folder(folder_path, limit)
+
+        # Filter by integration_id if provided and column exists
+        if not df.empty and integration_id and 'integration_id' in df.columns:
+            df = df[df['integration_id'].astype(str) == str(integration_id)]
+
+        return df
 
     def get_available_soe_tables(self) -> List[str]:
         """Get list of available SOE tables"""

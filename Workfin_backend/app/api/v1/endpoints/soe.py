@@ -37,30 +37,32 @@ async def get_soe_tables():
 async def get_soe_table_data(
     table_name: str,
     limit: Optional[int] = Query(100, description="Limit number of records"),
-    offset: Optional[int] = Query(0, description="Offset for pagination")
+    offset: Optional[int] = Query(0, description="Offset for pagination"),
+    integration_id: Optional[str] = Query(None, description="Filter by integration_id (e.g., '33F91ECD' for Charsfield)")
 ):
-    """Get data from a specific SOE table"""
+    """Get data from a specific SOE table with optional integration_id filtering"""
     try:
-        # Read data from blob storage
-        df = azure_blob_service.get_soe_data(table_name, limit=5)  # Limit files to read
-        
+        # Read data from blob storage (with integration_id filter if provided)
+        df = azure_blob_service.get_soe_data(table_name, limit=5, integration_id=integration_id)
+
         if df.empty:
             return {"data": [], "total": 0, "table": table_name}
-        
+
         # Apply pagination
         total = len(df)
         df = df.iloc[offset:offset + limit]
-        
+
         # Convert to dict and clean NaN values
         data = df.to_dict(orient="records")
         data = clean_nan_values(data)
-        
+
         return {
             "data": data,
             "total": total,
             "table": table_name,
             "limit": limit,
-            "offset": offset
+            "offset": offset,
+            "integration_id": integration_id
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get SOE data: {str(e)}")
@@ -69,16 +71,18 @@ async def get_soe_table_data(
 @router.get("/patients")
 async def get_patients(
     limit: Optional[int] = Query(100, description="Limit"),
-    offset: Optional[int] = Query(0, description="Offset")
+    offset: Optional[int] = Query(0, description="Offset"),
+    integration_id: Optional[str] = Query(None, description="Filter by integration_id")
 ):
     """Get patients data from vw_DimPatients"""
-    return await get_soe_table_data("vw_DimPatients", limit, offset)
+    return await get_soe_table_data("vw_DimPatients", limit, offset, integration_id)
 
 
 @router.get("/appointments")
 async def get_appointments(
     limit: Optional[int] = Query(100, description="Limit"),
-    offset: Optional[int] = Query(0, description="Offset")
+    offset: Optional[int] = Query(0, description="Offset"),
+    integration_id: Optional[str] = Query(None, description="Filter by integration_id")
 ):
-    """Get appointments data"""
-    return await get_soe_table_data("vw_Appointments", limit, offset)
+    """Get appointments data from vw_Appointments"""
+    return await get_soe_table_data("vw_Appointments", limit, offset, integration_id)
