@@ -10,7 +10,8 @@ import {
   UserOutlined,
   CalendarOutlined,
   LogoutOutlined,
-  DownOutlined
+  DownOutlined,
+  ApiOutlined
 } from '@ant-design/icons';
 import './SidebarNav.css';
 
@@ -91,6 +92,16 @@ const SidebarNav: React.FC<SidebarNavProps> = ({ collapsed }) => {
             { key: '/xero/vw-data', label: 'Data View' },
             { key: '/xero/vw-cash-sheet', label: 'Cash Sheet' },
             { key: '/xero/vw-related-accounts', label: 'Related Accounts' }
+          ]
+        },
+        {
+          key: '/pms',
+          icon: <ApiOutlined />,
+          label: 'PMS Integrations',
+          hasSubmenu: true,
+          submenu: [
+            { key: '/pms/connections', label: 'Connections' },
+            { key: '/pms/connections/create', label: 'Create Connection' }
           ]
         }
       ]

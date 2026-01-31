@@ -152,4 +152,31 @@ export const API_ENDPOINTS = {
       CUSTOM: (tableName: string) => `/xero/data/custom/${tableName}/`,
     },
   },
+  // PMS Integrations
+  PMS: {
+    CONNECTIONS: {
+      LIST: '/v1/pms/connections/',
+      CREATE: '/v1/pms/connections/',
+      GET: (id: string) => `/v1/pms/connections/${id}`,
+      UPDATE: (id: string) => `/v1/pms/connections/${id}`,
+      DELETE: (id: string) => `/v1/pms/connections/${id}`,
+      TEST: (id: string) => `/v1/pms/connections/${id}/test`,
+      SYNC: (id: string) => `/v1/pms/connections/${id}/sync`,
+      SYNC_ENTITY: (id: string, entity_type: string) => `/v1/pms/connections/${id}/sync/${entity_type}`,
+      HISTORY: (id: string) => `/v1/pms/connections/${id}/history`,
+    },
+    SOE_DATA: {
+      PATIENTS: '/v1/soe-data/patients/',
+      APPOINTMENTS: '/v1/soe-data/appointments/',
+      PROVIDERS: '/v1/soe-data/providers/',
+      TREATMENTS: '/v1/soe-data/treatments/',
+    },
+  },
+  // SOE (Azure Gold Layer)
+  SOE: {
+    TABLES: '/soe/tables',
+    PATIENTS: '/soe/patients',
+    APPOINTMENTS: '/soe/appointments',
+    DATA: (tableName: string) => `/soe/data/${tableName}`,
+  },
 } as const;

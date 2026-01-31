@@ -4,6 +4,8 @@ import { UploadOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { UploadFile } from 'antd/es/upload/interface';
 import clientService from '../../services/clientService';
+import pmsService, { PMSConnectionCreate } from '../../services/pmsService';
+import PMSIntegrationSection from '../../components/pms/PMSIntegrationSection';
 import './ClientOnboardingCreate.css';
 
 const { Option } = Select;
@@ -43,6 +45,7 @@ const ClientOnboardingCreate: React.FC = () => {
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingPMSConnections, setPendingPMSConnections] = useState<PMSConnectionCreate[]>([]);
   const tabsRef = React.useRef<HTMLDivElement>(null);
 
   const handleCancel = () => {
@@ -252,7 +255,48 @@ const ClientOnboardingCreate: React.FC = () => {
       } else {
         message.loading({ content: 'Creating client...', key: 'submit', duration: 0 });
         const response = await clientService.createClient(payload);
-        message.success({ content: 'Client onboarding completed successfully!', key: 'submit', duration: 2 });
+        const newClientId = response?.id;
+
+        // Save pending PMS connections if any
+        if (newClientId && pendingPMSConnections.length > 0) {
+          message.loading({
+            content: `Creating ${pendingPMSConnections.length} PMS connection(s)...`,
+            key: 'submit',
+            duration: 0
+          });
+
+          let successCount = 0;
+          let failedCount = 0;
+
+          for (const connData of pendingPMSConnections) {
+            try {
+              await pmsService.createConnection({
+                ...connData,
+                client_id: newClientId
+              });
+              successCount++;
+            } catch (error: any) {
+              console.error('Failed to create PMS connection:', error);
+              failedCount++;
+            }
+          }
+
+          if (failedCount === 0) {
+            message.success({
+              content: `Client and ${successCount} PMS connection(s) created successfully!`,
+              key: 'submit',
+              duration: 2
+            });
+          } else {
+            message.warning({
+              content: `Client created. ${successCount} PMS connection(s) created, ${failedCount} failed.`,
+              key: 'submit',
+              duration: 3
+            });
+          }
+        } else {
+          message.success({ content: 'Client onboarding completed successfully!', key: 'submit', duration: 2 });
+        }
       }
 
       // Navigate back to onboarding list after showing success message
@@ -975,39 +1019,10 @@ const ClientOnboardingCreate: React.FC = () => {
       label: 'PMS Integration Details',
       children: (
         <div className="tab-content">
-          <Form form={pmsForm} layout="vertical">
-            <div className="pms-section">
-              <h3 className="pms-section-title">SOE</h3>
-              <div className="pms-content">
-                <p className="no-data">No data found</p>
-                <Button type="link" className="add-more-btn">+ Add More</Button>
-              </div>
-            </div>
-
-            <div className="pms-section">
-              <h3 className="pms-section-title">DENTALLY</h3>
-              <div className="pms-content">
-                <p className="no-data">No data found</p>
-                <Button type="link" className="add-more-btn">+ Add More</Button>
-              </div>
-            </div>
-
-            <div className="pms-section">
-              <h3 className="pms-section-title">SFD</h3>
-              <div className="pms-content">
-                <p className="no-data">No data found</p>
-                <Button type="link" className="add-more-btn">+ Add More</Button>
-              </div>
-            </div>
-
-            <div className="pms-section">
-              <h3 className="pms-section-title">CARESTACK</h3>
-              <div className="pms-content">
-                <p className="no-data">No data found</p>
-                <Button type="link" className="add-more-btn">+ Add More</Button>
-              </div>
-            </div>
-          </Form>
+          <PMSIntegrationSection
+            clientId={clientId}
+            onConnectionsChange={setPendingPMSConnections}
+          />
         </div>
       ),
     },

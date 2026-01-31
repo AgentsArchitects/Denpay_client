@@ -29,6 +29,9 @@ import WorkFinUserList from './pages/users/WorkFinUserList';
 import WorkFinUserCreate from './pages/users/WorkFinUserCreate';
 import CompassDatesList from './pages/compass/CompassDatesList';
 import CompassDatesCreate from './pages/compass/CompassDatesCreate';
+import PMSConnectionList from './pages/pms/PMSConnectionList';
+import PMSConnectionCreate from './pages/pms/PMSConnectionCreate';
+import PMSConnectionDetail from './pages/pms/PMSConnectionDetail';
 import DashboardLayout from './components/layout/DashboardLayout';
 
 const App: React.FC = () => {
@@ -188,6 +191,21 @@ const App: React.FC = () => {
       <Route path="/compass/edit/:compassId" element={
         <DashboardLayout>
           <CompassDatesCreate />
+        </DashboardLayout>
+      } />
+      <Route path="/pms/connections" element={
+        <DashboardLayout>
+          <PMSConnectionList />
+        </DashboardLayout>
+      } />
+      <Route path="/pms/connections/create" element={
+        <DashboardLayout>
+          <PMSConnectionCreate />
+        </DashboardLayout>
+      } />
+      <Route path="/pms/connections/:id" element={
+        <DashboardLayout>
+          <PMSConnectionDetail />
         </DashboardLayout>
       } />
       <Route path="/" element={<Navigate to="/login" replace />} />
