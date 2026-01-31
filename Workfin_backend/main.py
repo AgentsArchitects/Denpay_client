@@ -14,6 +14,7 @@ from app.db.database import engine, Base
 
 # Import all models so they are registered with Base.metadata
 from app.db import xero_models  # noqa: F401
+from app.db import pms_models  # noqa: F401
 
 load_dotenv()
 
@@ -34,6 +35,22 @@ async def create_xero_tables():
     print("Xero tables verified/created successfully.")
 
 
+async def create_pms_tables():
+    """Create integrations and soe schemas and tables if they don't exist"""
+    from sqlalchemy import text
+    async with engine.begin() as conn:
+        await conn.execute(text('CREATE SCHEMA IF NOT EXISTS integrations'))
+        await conn.execute(text('CREATE SCHEMA IF NOT EXISTS soe'))
+        pms_tables = [
+            t for t in Base.metadata.sorted_tables
+            if t.schema in ("integrations", "soe")
+        ]
+        await conn.run_sync(
+            lambda sync_conn: Base.metadata.create_all(sync_conn, tables=pms_tables)
+        )
+    print("PMS/SOE tables verified/created successfully.")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
@@ -41,7 +58,11 @@ async def lifespan(app: FastAPI):
     try:
         await create_xero_tables()
     except Exception as e:
-        print(f"Warning: Could not auto-create tables: {e}")
+        print(f"Warning: Could not auto-create xero tables: {e}")
+    try:
+        await create_pms_tables()
+    except Exception as e:
+        print(f"Warning: Could not auto-create PMS/SOE tables: {e}")
     yield
     # Shutdown
     print("Shutting down DenPay Client Onboarding API...")

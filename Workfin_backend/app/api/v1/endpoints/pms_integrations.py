@@ -1,0 +1,301 @@
+"""
+PMS Integration API Endpoints
+Connection CRUD, sync triggers, and sync history
+"""
+import uuid
+from typing import Optional
+from datetime import datetime, timezone
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
+
+from app.db.database import get_db
+from app.db.pms_models import PMSConnection, SyncHistory
+from app.schemas.pms import (
+    PMSConnectionCreate, PMSConnectionUpdate, PMSConnectionResponse,
+    PMSSyncResponse, SyncHistoryResponse, SyncStatus, PaginatedResponse
+)
+from app.services.pms_sync_service import pms_sync_service
+from app.services.azure_blob_service import azure_blob_service
+
+router = APIRouter()
+
+
+# ==================
+# Connection CRUD
+# ==================
+
+@router.get("/connections/", response_model=PaginatedResponse)
+async def list_connections(
+    client_id: Optional[str] = Query(None),
+    pms_type: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db)
+):
+    """List PMS connections with optional filters"""
+    query = select(PMSConnection)
+    count_query = select(func.count(PMSConnection.id))
+
+    if client_id:
+        query = query.where(PMSConnection.client_id == client_id)
+        count_query = count_query.where(PMSConnection.client_id == client_id)
+    if pms_type:
+        query = query.where(PMSConnection.pms_type == pms_type)
+        count_query = count_query.where(PMSConnection.pms_type == pms_type)
+    if status:
+        query = query.where(PMSConnection.connection_status == status)
+        count_query = count_query.where(PMSConnection.connection_status == status)
+
+    # Get total count
+    total_result = await db.execute(count_query)
+    total = total_result.scalar()
+
+    # Apply pagination
+    offset = (page - 1) * page_size
+    query = query.order_by(PMSConnection.created_at.desc()).offset(offset).limit(page_size)
+    result = await db.execute(query)
+    connections = result.scalars().all()
+
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+
+    return PaginatedResponse(
+        data=[PMSConnectionResponse.model_validate(c).model_dump() for c in connections],
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages
+    )
+
+
+@router.get("/connections/{connection_id}", response_model=PMSConnectionResponse)
+async def get_connection(
+    connection_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get a single PMS connection"""
+    result = await db.execute(
+        select(PMSConnection).where(PMSConnection.id == connection_id)
+    )
+    connection = result.scalar_one_or_none()
+    if not connection:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    return connection
+
+
+@router.post("/connections/", response_model=PMSConnectionResponse)
+async def create_connection(
+    data: PMSConnectionCreate,
+    db: AsyncSession = Depends(get_db)
+):
+    """Create a new PMS connection"""
+    connection = PMSConnection(
+        id=uuid.uuid4(),
+        client_id=data.client_id,
+        practice_id=data.practice_id if data.practice_id else None,
+        pms_type=data.pms_type.value,
+        integration_name=data.integration_name,
+        external_practice_id=data.external_practice_id,
+        external_site_code=data.external_site_code,
+        data_source=data.data_source,
+        sync_frequency=data.sync_frequency,
+        sync_config=data.sync_config,
+        sync_patients=data.sync_patients,
+        sync_appointments=data.sync_appointments,
+        sync_providers=data.sync_providers,
+        sync_treatments=data.sync_treatments,
+        sync_billing=data.sync_billing,
+        connection_status="active",
+    )
+    db.add(connection)
+    await db.commit()
+    await db.refresh(connection)
+    return connection
+
+
+@router.put("/connections/{connection_id}", response_model=PMSConnectionResponse)
+async def update_connection(
+    connection_id: str,
+    data: PMSConnectionUpdate,
+    db: AsyncSession = Depends(get_db)
+):
+    """Update a PMS connection"""
+    result = await db.execute(
+        select(PMSConnection).where(PMSConnection.id == connection_id)
+    )
+    connection = result.scalar_one_or_none()
+    if not connection:
+        raise HTTPException(status_code=404, detail="Connection not found")
+
+    update_data = data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(connection, field, value)
+
+    connection.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(connection)
+    return connection
+
+
+@router.delete("/connections/{connection_id}")
+async def deactivate_connection(
+    connection_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """Deactivate a PMS connection (soft delete)"""
+    result = await db.execute(
+        select(PMSConnection).where(PMSConnection.id == connection_id)
+    )
+    connection = result.scalar_one_or_none()
+    if not connection:
+        raise HTTPException(status_code=404, detail="Connection not found")
+
+    connection.connection_status = "inactive"
+    connection.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    return {"message": "Connection deactivated", "id": str(connection.id)}
+
+
+# ==================
+# Test & Sync
+# ==================
+
+@router.post("/connections/{connection_id}/test")
+async def test_connection(
+    connection_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """Test blob storage access for a connection"""
+    result = await db.execute(
+        select(PMSConnection).where(PMSConnection.id == connection_id)
+    )
+    connection = result.scalar_one_or_none()
+    if not connection:
+        raise HTTPException(status_code=404, detail="Connection not found")
+
+    try:
+        tables = azure_blob_service.get_available_soe_tables()
+        return {
+            "status": "success",
+            "message": f"Connected to Azure Blob Storage. Found {len(tables)} SOE tables.",
+            "tables": tables
+        }
+    except Exception as e:
+        return {
+            "status": "failed",
+            "message": f"Connection test failed: {str(e)}"
+        }
+
+
+@router.post("/connections/{connection_id}/sync", response_model=dict)
+async def sync_connection(
+    connection_id: str,
+    triggered_by: str = Query("manual"),
+    db: AsyncSession = Depends(get_db)
+):
+    """Trigger a full sync for all enabled entities"""
+    result = await db.execute(
+        select(PMSConnection).where(PMSConnection.id == connection_id)
+    )
+    connection = result.scalar_one_or_none()
+    if not connection:
+        raise HTTPException(status_code=404, detail="Connection not found")
+
+    if connection.connection_status == "inactive":
+        raise HTTPException(status_code=400, detail="Connection is inactive")
+
+    try:
+        results = await pms_sync_service.sync_all(db, connection, triggered_by)
+        return {"status": "success", "results": results}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
+
+
+@router.post("/connections/{connection_id}/sync/{entity_type}", response_model=PMSSyncResponse)
+async def sync_entity(
+    connection_id: str,
+    entity_type: str,
+    triggered_by: str = Query("manual"),
+    db: AsyncSession = Depends(get_db)
+):
+    """Trigger sync for a specific entity type"""
+    valid_entities = ["patients", "appointments", "providers"]
+    if entity_type not in valid_entities:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid entity type. Must be one of: {', '.join(valid_entities)}"
+        )
+
+    result = await db.execute(
+        select(PMSConnection).where(PMSConnection.id == connection_id)
+    )
+    connection = result.scalar_one_or_none()
+    if not connection:
+        raise HTTPException(status_code=404, detail="Connection not found")
+
+    if connection.connection_status == "inactive":
+        raise HTTPException(status_code=400, detail="Connection is inactive")
+
+    try:
+        sync_result = await pms_sync_service.sync_entity(db, connection, entity_type, triggered_by)
+        return PMSSyncResponse(
+            connection_id=str(connection.id),
+            sync_type=entity_type,
+            status=SyncStatus.SUCCESS if sync_result["status"] == "success" else SyncStatus.FAILED,
+            records_processed=sync_result.get("records_processed", 0),
+            records_created=sync_result.get("records_created", 0),
+            records_updated=sync_result.get("records_updated", 0),
+            records_skipped=sync_result.get("records_skipped", 0),
+            records_failed=sync_result.get("records_failed", 0),
+            duration_seconds=sync_result.get("duration_seconds"),
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
+
+
+# ==================
+# Sync History
+# ==================
+
+@router.get("/connections/{connection_id}/history", response_model=PaginatedResponse)
+async def get_sync_history(
+    connection_id: str,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get sync history for a connection"""
+    # Verify connection exists
+    conn_result = await db.execute(
+        select(PMSConnection).where(PMSConnection.id == connection_id)
+    )
+    if not conn_result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Connection not found")
+
+    count_query = select(func.count(SyncHistory.id)).where(
+        SyncHistory.connection_id == connection_id
+    )
+    total_result = await db.execute(count_query)
+    total = total_result.scalar()
+
+    offset = (page - 1) * page_size
+    query = (
+        select(SyncHistory)
+        .where(SyncHistory.connection_id == connection_id)
+        .order_by(SyncHistory.started_at.desc())
+        .offset(offset)
+        .limit(page_size)
+    )
+    result = await db.execute(query)
+    records = result.scalars().all()
+
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+
+    return PaginatedResponse(
+        data=[SyncHistoryResponse.model_validate(r).model_dump() for r in records],
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages
+    )
