@@ -171,6 +171,8 @@ async def xero_callback(
                 stmt = stmt.on_conflict_do_update(
                     index_elements=["tenant_id"],
                     set_={
+                        "tenant_name": token_record.tenant_name,
+                        "integration_id": token_record.integration_id,
                         "access_token": token_record.access_token,
                         "refresh_token": token_record.refresh_token,
                         "expires_at": token_record.expires_at,
@@ -325,6 +327,8 @@ async def sync_accounts(
             stmt = stmt.on_conflict_do_update(
                 index_elements=["account_id"],
                 set_={
+                    "tenant_name": tenant_name,
+                    "integration_id": integration_id,
                     "name": account.get("Name"),
                     "status": account.get("Status"),
                     "raw_data": account,
@@ -400,6 +404,8 @@ async def sync_contacts(
             stmt = stmt.on_conflict_do_update(
                 index_elements=["contact_id"],
                 set_={
+                    "tenant_name": tenant_name,
+                    "integration_id": integration_id,
                     "name": contact.get("Name"),
                     "contact_status": contact.get("ContactStatus"),
                     "raw_data": contact,
@@ -450,6 +456,8 @@ async def sync_contact_groups(
             stmt = stmt.on_conflict_do_update(
                 index_elements=["contact_group_id"],
                 set_={
+                    "tenant_name": tenant_name,
+                    "integration_id": integration_id,
                     "name": group.get("Name"),
                     "status": group.get("Status"),
                     "raw_data": group,
@@ -536,6 +544,8 @@ async def sync_invoices(
             stmt = stmt.on_conflict_do_update(
                 index_elements=["invoice_id"],
                 set_={
+                    "tenant_name": tenant_name,
+                    "integration_id": integration_id,
                     "status": invoice.get("Status"),
                     "amount_due": invoice.get("AmountDue"),
                     "amount_paid": invoice.get("AmountPaid"),
@@ -617,6 +627,8 @@ async def sync_credit_notes(
             stmt = stmt.on_conflict_do_update(
                 index_elements=["credit_note_id"],
                 set_={
+                    "tenant_name": tenant_name,
+                    "integration_id": integration_id,
                     "status": cn.get("Status"),
                     "remaining_credit": cn.get("RemainingCredit"),
                     "raw_data": cn,
@@ -692,6 +704,8 @@ async def sync_payments(
             stmt = stmt.on_conflict_do_update(
                 index_elements=["payment_id"],
                 set_={
+                    "tenant_name": tenant_name,
+                    "integration_id": integration_id,
                     "status": payment.get("Status"),
                     "is_reconciled": payment.get("IsReconciled", False),
                     "raw_data": payment,
@@ -773,6 +787,8 @@ async def sync_bank_transactions(
             stmt = stmt.on_conflict_do_update(
                 index_elements=["bank_transaction_id"],
                 set_={
+                    "tenant_name": tenant_name,
+                    "integration_id": integration_id,
                     "status": txn.get("Status"),
                     "is_reconciled": txn.get("IsReconciled", False),
                     "raw_data": txn,
@@ -835,6 +851,8 @@ async def sync_bank_transfers(
             stmt = stmt.on_conflict_do_update(
                 index_elements=["bank_transfer_id"],
                 set_={
+                    "tenant_name": tenant_name,
+                    "integration_id": integration_id,
                     "raw_data": transfer,
                     "synced_at": datetime.now()
                 }
@@ -901,6 +919,8 @@ async def sync_journals(
             stmt = stmt.on_conflict_do_update(
                 index_elements=["journal_id"],
                 set_={
+                    "tenant_name": tenant_name,
+                    "integration_id": integration_id,
                     "raw_data": journal,
                     "synced_at": datetime.now()
                 }
@@ -933,6 +953,8 @@ async def sync_journals(
                 line_stmt = line_stmt.on_conflict_do_update(
                     index_elements=["journal_line_id"],
                     set_={
+                        "tenant_name": tenant_name,
+                        "integration_id": integration_id,
                         "raw_data": line,
                         "synced_at": datetime.now()
                     }
@@ -1008,7 +1030,7 @@ async def sync_quick_xero_data(
             )
             stmt = stmt.on_conflict_do_update(
                 index_elements=["account_id"],
-                set_={"name": account.get("Name"), "status": account.get("Status"), "raw_data": account, "synced_at": datetime.now()}
+                set_={"tenant_name": tenant_name, "integration_id": integration_id, "name": account.get("Name"), "status": account.get("Status"), "raw_data": account, "synced_at": datetime.now()}
             )
             await db.execute(stmt)
             synced_count += 1
@@ -1049,7 +1071,7 @@ async def sync_quick_xero_data(
             )
             stmt = stmt.on_conflict_do_update(
                 index_elements=["contact_id"],
-                set_={"name": contact.get("Name"), "contact_status": contact.get("ContactStatus"), "raw_data": contact, "synced_at": datetime.now()}
+                set_={"tenant_name": tenant_name, "integration_id": integration_id, "name": contact.get("Name"), "contact_status": contact.get("ContactStatus"), "raw_data": contact, "synced_at": datetime.now()}
             )
             await db.execute(stmt)
             synced_count += 1
@@ -1100,7 +1122,7 @@ async def sync_quick_xero_data(
             )
             stmt = stmt.on_conflict_do_update(
                 index_elements=["invoice_id"],
-                set_={"status": invoice.get("Status"), "amount_due": invoice.get("AmountDue"), "amount_paid": invoice.get("AmountPaid"), "raw_data": invoice, "synced_at": datetime.now()}
+                set_={"tenant_name": tenant_name, "integration_id": integration_id, "status": invoice.get("Status"), "amount_due": invoice.get("AmountDue"), "amount_paid": invoice.get("AmountPaid"), "raw_data": invoice, "synced_at": datetime.now()}
             )
             await db.execute(stmt)
             synced_count += 1
@@ -1142,7 +1164,7 @@ async def sync_quick_xero_data(
             )
             stmt = stmt.on_conflict_do_update(
                 index_elements=["credit_note_id"],
-                set_={"status": cn.get("Status"), "remaining_credit": cn.get("RemainingCredit"), "raw_data": cn, "synced_at": datetime.now()}
+                set_={"tenant_name": tenant_name, "integration_id": integration_id, "status": cn.get("Status"), "remaining_credit": cn.get("RemainingCredit"), "raw_data": cn, "synced_at": datetime.now()}
             )
             await db.execute(stmt)
             synced_count += 1
@@ -1182,7 +1204,7 @@ async def sync_quick_xero_data(
             )
             stmt = stmt.on_conflict_do_update(
                 index_elements=["payment_id"],
-                set_={"status": payment.get("Status"), "is_reconciled": payment.get("IsReconciled", False), "raw_data": payment, "synced_at": datetime.now()}
+                set_={"tenant_name": tenant_name, "integration_id": integration_id, "status": payment.get("Status"), "is_reconciled": payment.get("IsReconciled", False), "raw_data": payment, "synced_at": datetime.now()}
             )
             await db.execute(stmt)
             synced_count += 1
@@ -1225,7 +1247,7 @@ async def sync_quick_xero_data(
             )
             stmt = stmt.on_conflict_do_update(
                 index_elements=["bank_transaction_id"],
-                set_={"status": txn.get("Status"), "is_reconciled": txn.get("IsReconciled", False), "raw_data": txn, "synced_at": datetime.now()}
+                set_={"tenant_name": tenant_name, "integration_id": integration_id, "status": txn.get("Status"), "is_reconciled": txn.get("IsReconciled", False), "raw_data": txn, "synced_at": datetime.now()}
             )
             await db.execute(stmt)
             synced_count += 1
@@ -1256,7 +1278,7 @@ async def sync_quick_xero_data(
             )
             stmt = stmt.on_conflict_do_update(
                 index_elements=["journal_id"],
-                set_={"raw_data": journal, "synced_at": datetime.now()}
+                set_={"tenant_name": tenant_name, "integration_id": integration_id, "raw_data": journal, "synced_at": datetime.now()}
             )
             await db.execute(stmt)
             synced_count += 1
@@ -1283,7 +1305,7 @@ async def sync_quick_xero_data(
             )
             stmt = stmt.on_conflict_do_update(
                 index_elements=["contact_group_id"],
-                set_={"name": group.get("Name"), "status": group.get("Status"), "raw_data": group, "synced_at": datetime.now()}
+                set_={"tenant_name": tenant_name, "integration_id": integration_id, "name": group.get("Name"), "status": group.get("Status"), "raw_data": group, "synced_at": datetime.now()}
             )
             await db.execute(stmt)
             synced_count += 1
@@ -1319,7 +1341,7 @@ async def sync_quick_xero_data(
             )
             stmt = stmt.on_conflict_do_update(
                 index_elements=["bank_transfer_id"],
-                set_={"raw_data": transfer, "synced_at": datetime.now()}
+                set_={"tenant_name": tenant_name, "integration_id": integration_id, "raw_data": transfer, "synced_at": datetime.now()}
             )
             await db.execute(stmt)
             synced_count += 1
