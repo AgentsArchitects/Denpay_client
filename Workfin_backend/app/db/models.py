@@ -42,7 +42,7 @@ class Client(Base):
     __table_args__ = {"schema": SCHEMA}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id = Column(String(8), unique=True, nullable=False, default=generate_alphanumeric_id)
+    tenant_id = Column(String(8), unique=True, nullable=True, default=generate_alphanumeric_id)
 
     # Basic Information
     legal_trading_name = Column(String(255), nullable=False)

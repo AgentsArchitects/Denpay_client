@@ -32,7 +32,7 @@ export interface PMSConnection {
 }
 
 export interface PMSConnectionCreate {
-  client_id: string;
+  client_id?: string;
   practice_id?: string;
   pms_type: 'SOE' | 'DENTALLY' | 'SFD' | 'CARESTACK';
   integration_name: string;

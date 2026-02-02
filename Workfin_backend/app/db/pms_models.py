@@ -26,7 +26,7 @@ class PMSConnection(Base):
     client_id = Column(UUID(as_uuid=True), nullable=False)
     practice_id = Column(UUID(as_uuid=True), nullable=True)
     pms_type = Column(String, nullable=False)
-    integration_id = Column(String(8), unique=True, nullable=False, default=generate_alphanumeric_id)
+    integration_id = Column(String(8), unique=True, nullable=True, default=generate_alphanumeric_id)
     integration_name = Column(String, nullable=False)
     external_practice_id = Column(String, nullable=True)
     external_site_code = Column(String, nullable=True)

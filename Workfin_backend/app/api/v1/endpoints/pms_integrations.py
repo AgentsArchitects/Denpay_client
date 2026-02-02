@@ -109,7 +109,7 @@ async def create_connection(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new PMS connection"""
-    client_uuid = to_uuid(data.client_id)
+    client_uuid = to_uuid(data.client_id) if data.client_id else None
     practice_uuid = to_uuid(data.practice_id) if data.practice_id else None
 
     connection = PMSConnection(

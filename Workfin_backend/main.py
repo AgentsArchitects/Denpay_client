@@ -52,8 +52,8 @@ async def create_pms_tables():
     print("PMS/SOE tables verified/created successfully.")
 
 
-async def backfill_ids():
-    """Backfill tenant_id for existing clients and integration_id for existing PMS connections"""
+async def ensure_columns_and_backfill():
+    """Ensure tenant_id and integration_id columns exist, then backfill any NULLs"""
     from sqlalchemy import text
     from app.db.utils import generate_alphanumeric_id
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -62,7 +62,45 @@ async def backfill_ids():
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     async with async_session() as session:
         try:
-            # Check if tenant_id column exists and backfill nulls
+            # Step 1: Add tenant_id column to clients if it doesn't exist
+            await session.execute(text('''
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema = 'denpay-dev' AND table_name = 'clients' AND column_name = 'tenant_id'
+                    ) THEN
+                        ALTER TABLE "denpay-dev".clients ADD COLUMN tenant_id VARCHAR(8);
+                    END IF;
+                END $$;
+            '''))
+            await session.commit()
+            print("Ensured tenant_id column exists on clients table.")
+        except Exception as e:
+            print(f"Warning: Could not ensure tenant_id column: {e}")
+            await session.rollback()
+
+        try:
+            # Step 2: Add integration_id column to pms_connections if it doesn't exist
+            await session.execute(text('''
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema = 'integrations' AND table_name = 'pms_connections' AND column_name = 'integration_id'
+                    ) THEN
+                        ALTER TABLE integrations.pms_connections ADD COLUMN integration_id VARCHAR(8);
+                    END IF;
+                END $$;
+            '''))
+            await session.commit()
+            print("Ensured integration_id column exists on pms_connections table.")
+        except Exception as e:
+            print(f"Warning: Could not ensure integration_id column: {e}")
+            await session.rollback()
+
+        try:
+            # Step 3: Backfill tenant_id for existing clients
             result = await session.execute(
                 text('SELECT id FROM "denpay-dev".clients WHERE tenant_id IS NULL')
             )
@@ -77,7 +115,7 @@ async def backfill_ids():
             if clients_without_tenant:
                 print(f"Backfilled tenant_id for {len(clients_without_tenant)} client(s).")
 
-            # Backfill integration_id for PMS connections
+            # Step 4: Backfill integration_id for PMS connections
             result = await session.execute(
                 text('SELECT id FROM integrations.pms_connections WHERE integration_id IS NULL')
             )
@@ -94,7 +132,7 @@ async def backfill_ids():
 
             await session.commit()
         except Exception as e:
-            print(f"Backfill skipped (columns may not exist yet): {e}")
+            print(f"Backfill skipped: {e}")
             await session.rollback()
 
 
@@ -111,7 +149,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"Warning: Could not auto-create PMS/SOE tables: {e}")
     try:
-        await backfill_ids()
+        await ensure_columns_and_backfill()
     except Exception as e:
         print(f"Warning: Could not backfill IDs: {e}")
     yield

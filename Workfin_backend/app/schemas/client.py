@@ -227,7 +227,7 @@ class ClientResponse(BaseModel):
     """Schema for client response with all related data"""
 
     id: UUID
-    tenant_id: str
+    tenant_id: Optional[str] = None
     status: str
     created_at: datetime
     updated_at: datetime
@@ -280,7 +280,7 @@ class ClientListItem(BaseModel):
     """Schema for client list items (summary view)"""
 
     id: UUID
-    tenant_id: str
+    tenant_id: Optional[str] = None
     legal_trading_name: str
     workfin_reference: str
     status: str

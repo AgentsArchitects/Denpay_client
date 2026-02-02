@@ -34,7 +34,7 @@ class SyncStatus(str, Enum):
 # ==================
 
 class PMSConnectionCreate(BaseModel):
-    client_id: str
+    client_id: Optional[str] = None
     practice_id: Optional[str] = None
     pms_type: PMSType
     integration_name: str
@@ -70,7 +70,7 @@ class PMSConnectionResponse(BaseModel):
     client_id: str
     practice_id: Optional[str] = None
     pms_type: str
-    integration_id: str
+    integration_id: Optional[str] = None
     integration_name: str
     external_practice_id: Optional[str] = None
     external_site_code: Optional[str] = None

@@ -27,8 +27,6 @@ const PMSConnectionCreatePage: React.FC = () => {
       }
 
       const data: PMSConnectionCreate = {
-        client_id: values.client_id,
-        practice_id: values.practice_id || undefined,
         pms_type: values.pms_type,
         integration_name: values.integration_name,
         external_practice_id: values.external_practice_id || undefined,
@@ -263,25 +261,6 @@ const PMSConnectionCreatePage: React.FC = () => {
               <Select.Option value="SFD">SFD (Smile for Dentists)</Select.Option>
               <Select.Option value="CARESTACK">CareStack</Select.Option>
             </Select>
-          </Form.Item>
-
-          <Divider>Client Details</Divider>
-
-          <Form.Item
-            label="Client ID"
-            name="client_id"
-            rules={[{ required: true, message: 'Please enter client ID' }]}
-            tooltip="The UUID of the client in WorkFin"
-          >
-            <Input placeholder="00000000-0000-0000-0000-000000000001" />
-          </Form.Item>
-
-          <Form.Item
-            label="Practice ID (Optional)"
-            name="practice_id"
-            tooltip="The UUID of the practice/location in WorkFin"
-          >
-            <Input placeholder="00000000-0000-0000-0000-000000000002" />
           </Form.Item>
 
           {/* Type-specific credential fields */}
