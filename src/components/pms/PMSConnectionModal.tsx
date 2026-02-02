@@ -48,6 +48,10 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
 
       const data: PMSConnectionCreate = {
         ...values,
+        // Explicitly set clientId and pmsType since their form fields may be hidden
+        ...(clientId && { client_id: clientId }),
+        ...(pmsType && { pms_type: pmsType }),
+        ...(practiceId && { practice_id: practiceId }),
         sync_patients: values.sync_patients ?? true,
         sync_appointments: values.sync_appointments ?? true,
         sync_providers: values.sync_providers ?? true,
@@ -144,7 +148,7 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
           </Form.Item>
         )}
 
-        {!clientId && (
+        {!clientId && !simplified && (
           <Form.Item
             label="Client ID"
             name="client_id"
