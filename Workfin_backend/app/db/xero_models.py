@@ -6,15 +6,12 @@ from sqlalchemy import Column, String, DateTime, Date, Boolean, Text, Integer, N
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from app.db.database import Base
+from app.db.utils import generate_alphanumeric_id
 import uuid
-import secrets
-import string
 
 
-def generate_integration_id() -> str:
-    """Generate a unique 8-character alphanumeric integration ID."""
-    alphabet = string.ascii_uppercase + string.digits
-    return ''.join(secrets.choice(alphabet) for _ in range(8))
+# Backward-compatible alias
+generate_integration_id = generate_alphanumeric_id
 
 # Xero schema name
 XERO_SCHEMA = "xero"

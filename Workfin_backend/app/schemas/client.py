@@ -8,6 +8,19 @@ from uuid import UUID
 # NESTED SCHEMAS FOR RELATED DATA
 # =====================
 
+class PracticeResponse(BaseModel):
+    """Practice/Location response schema"""
+    id: UUID
+    name: str
+    location_id: str
+    status: str
+    external_system_id: Optional[str] = None
+    acquisition_date: Optional[date] = None
+
+    class Config:
+        from_attributes = True
+
+
 class ClientAddressBase(BaseModel):
     """Address information for a client"""
     line1: str = Field(..., description="Address line 1")
@@ -56,26 +69,6 @@ class AdjustmentTypeCreate(AdjustmentTypeBase):
 
 class AdjustmentTypeResponse(AdjustmentTypeBase):
     id: UUID
-
-    class Config:
-        from_attributes = True
-
-
-class PMSIntegrationBase(BaseModel):
-    """Practice Management System integration"""
-    pms_type: str = Field(..., description="PMS type: SOE, DENTALLY, SFD, CARESTACK")
-    integration_config: Optional[str] = Field(None, description="JSON configuration")
-    status: Optional[str] = Field(default="Active", description="Status: Active/Inactive")
-
-
-class PMSIntegrationCreate(PMSIntegrationBase):
-    pass
-
-
-class PMSIntegrationResponse(PMSIntegrationBase):
-    id: UUID
-    created_at: datetime
-    updated_at: datetime
 
     class Config:
         from_attributes = True
@@ -183,9 +176,6 @@ class ClientCreate(ClientBase):
     # Tab 6: Adjustment Types
     adjustment_types: Optional[List[AdjustmentTypeCreate]] = Field(default_factory=list, description="List of adjustment types")
 
-    # Tab 7: PMS Integration Details
-    pms_integrations: Optional[List[PMSIntegrationCreate]] = Field(default_factory=list, description="List of PMS integrations")
-
     # Tab 8: Denpay Periods
     denpay_periods: Optional[List[DenpayPeriodCreate]] = Field(default_factory=list, description="List of Denpay periods")
 
@@ -237,6 +227,7 @@ class ClientResponse(BaseModel):
     """Schema for client response with all related data"""
 
     id: UUID
+    tenant_id: str
     status: str
     created_at: datetime
     updated_at: datetime
@@ -276,8 +267,8 @@ class ClientResponse(BaseModel):
     # Related data
     address: Optional[ClientAddressResponse] = None
     users: List[UserResponse] = Field(default_factory=list)
+    practices: List[PracticeResponse] = Field(default_factory=list)
     adjustment_types: List[AdjustmentTypeResponse] = Field(default_factory=list)
-    pms_integrations: List[PMSIntegrationResponse] = Field(default_factory=list)
     denpay_periods: List[DenpayPeriodResponse] = Field(default_factory=list)
     fy_end_periods: List[FYEndPeriodResponse] = Field(default_factory=list)
 
@@ -289,6 +280,7 @@ class ClientListItem(BaseModel):
     """Schema for client list items (summary view)"""
 
     id: UUID
+    tenant_id: str
     legal_trading_name: str
     workfin_reference: str
     status: str

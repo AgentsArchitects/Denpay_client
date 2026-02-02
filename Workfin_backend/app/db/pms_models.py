@@ -6,6 +6,7 @@ from sqlalchemy import Column, String, DateTime, Date, Boolean, Text, Integer, N
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from app.db.database import Base
+from app.db.utils import generate_alphanumeric_id
 import uuid
 
 
@@ -25,6 +26,7 @@ class PMSConnection(Base):
     client_id = Column(UUID(as_uuid=True), nullable=False)
     practice_id = Column(UUID(as_uuid=True), nullable=True)
     pms_type = Column(String, nullable=False)
+    integration_id = Column(String(8), unique=True, nullable=False, default=generate_alphanumeric_id)
     integration_name = Column(String, nullable=False)
     external_practice_id = Column(String, nullable=True)
     external_site_code = Column(String, nullable=True)

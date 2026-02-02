@@ -2,6 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, Select, Switch, message, Divider } from 'antd';
 import pmsService, { PMSConnectionCreate } from '../../services/pmsService';
 
+interface Practice {
+  id: string;
+  name: string;
+  location_id: string;
+  status: string;
+}
+
 interface PMSConnectionModalProps {
   visible: boolean;
   onClose: () => void;
@@ -9,7 +16,8 @@ interface PMSConnectionModalProps {
   pmsType?: 'SOE' | 'DENTALLY' | 'SFD' | 'CARESTACK';
   clientId?: string;
   practiceId?: string;
-  simplified?: boolean; // If true, show simplified form for onboarding
+  practices?: Practice[];
+  simplified?: boolean;
 }
 
 const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
@@ -19,6 +27,7 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
   pmsType,
   clientId,
   practiceId,
+  practices = [],
   simplified = false,
 }) => {
   const [form] = Form.useForm();
@@ -32,14 +41,11 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
         form.setFieldsValue({ pms_type: pmsType });
         setSelectedPMSType(pmsType);
       }
-      if (clientId) {
-        form.setFieldsValue({ client_id: clientId });
-      }
       if (practiceId) {
         form.setFieldsValue({ practice_id: practiceId });
       }
     }
-  }, [visible, pmsType, clientId, practiceId, form]);
+  }, [visible, pmsType, practiceId, form]);
 
   const handleSubmit = async () => {
     try {
@@ -51,7 +57,8 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
         // Explicitly set clientId and pmsType since their form fields may be hidden
         ...(clientId && { client_id: clientId }),
         ...(pmsType && { pms_type: pmsType }),
-        ...(practiceId && { practice_id: practiceId }),
+        // Use form value for practice_id if present, otherwise use prop
+        practice_id: values.practice_id || practiceId || undefined,
         sync_patients: values.sync_patients ?? true,
         sync_appointments: values.sync_appointments ?? true,
         sync_providers: values.sync_providers ?? true,
@@ -60,13 +67,11 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
       };
 
       if (clientId) {
-        // Client is saved - create connection in backend
         const connection = await pmsService.createConnection(data);
-        message.success('PMS connection created successfully');
+        message.success(`Integration created (ID: ${connection.integration_id})`);
         form.resetFields();
         onSuccess(connection);
       } else {
-        // Client not saved yet - return connection data to parent
         message.success('Connection added (will be created when client is saved)');
         form.resetFields();
         onSuccess(data);
@@ -74,7 +79,6 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
       onClose();
     } catch (error: any) {
       if (error.errorFields) {
-        // Validation error, don't show message
         return;
       }
       message.error(error.message || 'Failed to create PMS connection');
@@ -100,19 +104,20 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
 
   return (
     <Modal
-      title={`Add ${pmsType ? getPMSTypeLabel(pmsType) : 'PMS'} Connection`}
+      title={`Add ${pmsType ? getPMSTypeLabel(pmsType) : 'PMS'} Integration`}
       open={visible}
       onOk={handleSubmit}
       onCancel={handleCancel}
       confirmLoading={loading}
       width={simplified ? 500 : 700}
-      okText="Create Connection"
+      okText="Create Integration"
     >
       <Form
         form={form}
         layout="vertical"
         initialValues={{
           pms_type: pmsType || 'SOE',
+          practice_id: practiceId || undefined,
           data_source: 'azure_blob',
           sync_frequency: 'daily',
           sync_patients: true,
@@ -128,7 +133,7 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
           label="Integration Name"
           name="integration_name"
           rules={[{ required: true, message: 'Please enter integration name' }]}
-          tooltip="A friendly name for this connection"
+          tooltip="A friendly name for this integration"
         >
           <Input placeholder="e.g., Charsfield SOE Integration" />
         </Form.Item>
@@ -148,18 +153,28 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
           </Form.Item>
         )}
 
-        {!clientId && !simplified && (
+        {/* Location/Practice dropdown - shown when practices are available */}
+        {!simplified && practices.length > 0 && (
           <Form.Item
-            label="Client ID"
-            name="client_id"
-            rules={[{ required: true, message: 'Please enter client ID' }]}
-            tooltip="The UUID of the client in WorkFin"
+            label="Location (Practice)"
+            name="practice_id"
+            tooltip="Select which practice/location this integration belongs to"
           >
-            <Input placeholder="00000000-0000-0000-0000-000000000001" />
+            <Select
+              placeholder="Select a location (optional)"
+              allowClear
+            >
+              {practices.map((p) => (
+                <Select.Option key={p.id} value={p.id}>
+                  {p.name} ({p.location_id})
+                </Select.Option>
+              ))}
+            </Select>
           </Form.Item>
         )}
 
-        {!practiceId && !simplified && (
+        {/* Show raw practice_id field only if no practices list and not simplified */}
+        {!simplified && practices.length === 0 && !practiceId && (
           <Form.Item
             label="Practice ID (Optional)"
             name="practice_id"

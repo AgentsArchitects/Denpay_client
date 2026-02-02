@@ -3,6 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID, ENUM
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.database import Base
+from app.db.utils import generate_alphanumeric_id
 import uuid
 import enum
 
@@ -41,6 +42,7 @@ class Client(Base):
     __table_args__ = {"schema": SCHEMA}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(String(8), unique=True, nullable=False, default=generate_alphanumeric_id)
 
     # Basic Information
     legal_trading_name = Column(String(255), nullable=False)
@@ -96,7 +98,6 @@ class Client(Base):
     adjustment_types = relationship("ClientAdjustmentType", back_populates="client", cascade="all, delete-orphan")
     denpay_periods = relationship("ClientDenpayPeriod", back_populates="client", cascade="all, delete-orphan")
     fy_end_periods = relationship("ClientFYEndPeriod", back_populates="client", cascade="all, delete-orphan")
-    pms_integrations = relationship("ClientPMSIntegration", back_populates="client", cascade="all, delete-orphan")
 
 
 class ClientAddress(Base):
@@ -160,7 +161,6 @@ class Practice(Base):
     location_id = Column(String(100), nullable=False)
     acquisition_date = Column(Date, nullable=False)
     status = Column(String, nullable=False, default="Active")
-    integration_id = Column(String(100), nullable=False)
     external_system_id = Column(String(100), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
@@ -269,23 +269,6 @@ class ClientAdjustmentType(Base):
 
     # Relationships
     client = relationship("Client", back_populates="adjustment_types")
-
-
-class ClientPMSIntegration(Base):
-    """Tab 7: PMS Integration Details - Practice Management System integrations"""
-    __tablename__ = "client_pms_integrations"
-    __table_args__ = {"schema": SCHEMA}
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    client_id = Column(UUID(as_uuid=True), ForeignKey(f'{SCHEMA}.clients.id'), nullable=False)
-    pms_type = Column(String(50), nullable=False)  # SOE, DENTALLY, SFD, CARESTACK
-    integration_config = Column(Text, nullable=True)  # JSON configuration
-    status = Column(String(50), nullable=False, default="Active")
-    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
-
-    # Relationships
-    client = relationship("Client", back_populates="pms_integrations")
 
 
 class ClientDenpayPeriod(Base):

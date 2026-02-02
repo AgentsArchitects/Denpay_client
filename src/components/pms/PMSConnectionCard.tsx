@@ -120,6 +120,11 @@ const PMSConnectionCard: React.FC<PMSConnectionCardProps> = ({
       }
     >
       <Descriptions size="small" column={1}>
+        <Descriptions.Item label="Integration ID">
+          <Tag color="purple" style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+            {connection.integration_id}
+          </Tag>
+        </Descriptions.Item>
         <Descriptions.Item label="PMS Type">
           <Tag color="blue">{connection.pms_type}</Tag>
         </Descriptions.Item>

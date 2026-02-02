@@ -70,6 +70,7 @@ class PMSConnectionResponse(BaseModel):
     client_id: str
     practice_id: Optional[str] = None
     pms_type: str
+    integration_id: str
     integration_name: str
     external_practice_id: Optional[str] = None
     external_site_code: Optional[str] = None

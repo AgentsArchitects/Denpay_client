@@ -96,6 +96,7 @@ export const API_ENDPOINTS = {
     GET: (id: string) => `/clients/${id}`,
     UPDATE: (id: string) => `/clients/${id}`,
     DELETE: (id: string) => `/clients/${id}`,
+    BY_TENANT: (tenantId: string) => `/clients/by-tenant/${tenantId}`,
     USERS: (id: string) => `/clients/${id}/users`,
     CREATE_USER: (id: string) => `/clients/${id}/users`,
   },

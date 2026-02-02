@@ -8,6 +8,7 @@ import './ClientOnboardingList.css';
 
 interface ClientData {
   key: string;
+  tenantId: string;
   tradingName: string;
   entityReference: string;
   date: string;
@@ -16,6 +17,7 @@ interface ClientData {
 
 interface ClientFromAPI {
   id: string;
+  tenant_id: string;
   legal_trading_name: string;
   workfin_reference: string;
   status: string;
@@ -43,6 +45,7 @@ const ClientOnboardingList: React.FC = () => {
       // Transform API response to match table data structure
       const transformedData: ClientData[] = response.map((client: ClientFromAPI) => ({
         key: client.id,
+        tenantId: client.tenant_id || '-',
         tradingName: client.legal_trading_name,
         entityReference: client.workfin_reference,
         date: formatDate(client.created_at),
@@ -92,6 +95,17 @@ const ClientOnboardingList: React.FC = () => {
   };
 
   const columns: ColumnsType<ClientData> = [
+    {
+      title: 'Tenant ID',
+      dataIndex: 'tenantId',
+      key: 'tenantId',
+      width: 110,
+      render: (text) => (
+        <Tag color="purple" style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+          {text}
+        </Tag>
+      ),
+    },
     {
       title: 'Legal Client Trading Name',
       dataIndex: 'tradingName',

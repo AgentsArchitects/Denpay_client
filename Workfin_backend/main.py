@@ -13,6 +13,7 @@ from app.core.config import settings
 from app.db.database import engine, Base
 
 # Import all models so they are registered with Base.metadata
+from app.db import models  # noqa: F401
 from app.db import xero_models  # noqa: F401
 from app.db import pms_models  # noqa: F401
 
@@ -51,6 +52,52 @@ async def create_pms_tables():
     print("PMS/SOE tables verified/created successfully.")
 
 
+async def backfill_ids():
+    """Backfill tenant_id for existing clients and integration_id for existing PMS connections"""
+    from sqlalchemy import text
+    from app.db.utils import generate_alphanumeric_id
+    from sqlalchemy.ext.asyncio import AsyncSession
+    from sqlalchemy.orm import sessionmaker
+
+    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async with async_session() as session:
+        try:
+            # Check if tenant_id column exists and backfill nulls
+            result = await session.execute(
+                text('SELECT id FROM "denpay-dev".clients WHERE tenant_id IS NULL')
+            )
+            clients_without_tenant = result.fetchall()
+            for row in clients_without_tenant:
+                tid = generate_alphanumeric_id()
+                await session.execute(
+                    text('UPDATE "denpay-dev".clients SET tenant_id = :tid WHERE id = :cid'),
+                    {"tid": tid, "cid": row[0]}
+                )
+
+            if clients_without_tenant:
+                print(f"Backfilled tenant_id for {len(clients_without_tenant)} client(s).")
+
+            # Backfill integration_id for PMS connections
+            result = await session.execute(
+                text('SELECT id FROM integrations.pms_connections WHERE integration_id IS NULL')
+            )
+            connections_without_id = result.fetchall()
+            for row in connections_without_id:
+                iid = generate_alphanumeric_id()
+                await session.execute(
+                    text('UPDATE integrations.pms_connections SET integration_id = :iid WHERE id = :cid'),
+                    {"iid": iid, "cid": row[0]}
+                )
+
+            if connections_without_id:
+                print(f"Backfilled integration_id for {len(connections_without_id)} PMS connection(s).")
+
+            await session.commit()
+        except Exception as e:
+            print(f"Backfill skipped (columns may not exist yet): {e}")
+            await session.rollback()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
@@ -63,6 +110,10 @@ async def lifespan(app: FastAPI):
         await create_pms_tables()
     except Exception as e:
         print(f"Warning: Could not auto-create PMS/SOE tables: {e}")
+    try:
+        await backfill_ids()
+    except Exception as e:
+        print(f"Warning: Could not backfill IDs: {e}")
     yield
     # Shutdown
     print("Shutting down DenPay Client Onboarding API...")

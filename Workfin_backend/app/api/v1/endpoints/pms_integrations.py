@@ -36,7 +36,9 @@ def to_uuid(value: str) -> uuid_mod.UUID:
 @router.get("/connections/", response_model=PaginatedResponse)
 async def list_connections(
     client_id: Optional[str] = Query(None),
+    practice_id: Optional[str] = Query(None),
     pms_type: Optional[str] = Query(None),
+    integration_id: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -50,9 +52,16 @@ async def list_connections(
         client_uuid = to_uuid(client_id)
         query = query.where(PMSConnection.client_id == client_uuid)
         count_query = count_query.where(PMSConnection.client_id == client_uuid)
+    if practice_id:
+        practice_uuid = to_uuid(practice_id)
+        query = query.where(PMSConnection.practice_id == practice_uuid)
+        count_query = count_query.where(PMSConnection.practice_id == practice_uuid)
     if pms_type:
         query = query.where(PMSConnection.pms_type == pms_type)
         count_query = count_query.where(PMSConnection.pms_type == pms_type)
+    if integration_id:
+        query = query.where(PMSConnection.integration_id == integration_id)
+        count_query = count_query.where(PMSConnection.integration_id == integration_id)
     if status:
         query = query.where(PMSConnection.connection_status == status)
         count_query = count_query.where(PMSConnection.connection_status == status)

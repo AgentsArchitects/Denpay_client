@@ -46,6 +46,7 @@ const ClientOnboardingCreate: React.FC = () => {
   const [showRightArrow, setShowRightArrow] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingPMSConnections, setPendingPMSConnections] = useState<PMSConnectionCreate[]>([]);
+  const [tenantId, setTenantId] = useState<string | null>(null);
   const tabsRef = React.useRef<HTMLDivElement>(null);
 
   const handleCancel = () => {
@@ -202,9 +203,6 @@ const ClientOnboardingCreate: React.FC = () => {
 
         // Tab 6: Adjustment Types
         adjustment_types: adjustmentTypes.map(name => ({ name })),
-
-        // Tab 7: PMS Integration Details (empty for now)
-        pms_integrations: [],
 
         // Tab 8: Denpay Period
         denpay_periods: denpayPeriods
@@ -432,6 +430,11 @@ const ClientOnboardingCreate: React.FC = () => {
           const clientData = await clientService.getClient(clientId) as any;
           console.log('Fetched client data:', clientData);
 
+          // Store tenant ID
+          if (clientData.tenant_id) {
+            setTenantId(clientData.tenant_id);
+          }
+
           // Transform API data to form field structure
           const formData = {
             type: clientData.client_type || '',
@@ -520,6 +523,53 @@ const ClientOnboardingCreate: React.FC = () => {
       children: (
         <div className="tab-content">
           <Form form={form} layout="vertical">
+            {/* Tenant ID - shown in edit mode or after creation */}
+            {tenantId && (
+              <div className="form-row" style={{ marginBottom: 16 }}>
+                <div className="form-col-full">
+                  <div style={{
+                    background: '#f6ffed',
+                    border: '1px solid #b7eb8f',
+                    borderRadius: 6,
+                    padding: '12px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12
+                  }}>
+                    <span style={{ fontWeight: 500 }}>Tenant ID:</span>
+                    <span style={{
+                      fontFamily: 'monospace',
+                      fontSize: 18,
+                      fontWeight: 700,
+                      color: '#52c41a',
+                      letterSpacing: 2
+                    }}>
+                      {tenantId}
+                    </span>
+                    <span style={{ color: '#8c8c8c', fontSize: 12 }}>
+                      (Auto-generated, unique identifier for this tenant)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+            {!tenantId && !isEditMode && (
+              <div className="form-row" style={{ marginBottom: 16 }}>
+                <div className="form-col-full">
+                  <div style={{
+                    background: '#f0f5ff',
+                    border: '1px solid #adc6ff',
+                    borderRadius: 6,
+                    padding: '12px 16px',
+                  }}>
+                    <span style={{ color: '#4096ff' }}>
+                      A unique 8-digit Tenant ID will be auto-generated when this client is saved.
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="form-row">
               <div className="form-col">
                 <Form.Item label="Expanded Logo">

@@ -10,6 +10,7 @@ export interface PMSConnection {
   client_id: string;
   practice_id?: string;
   pms_type: 'SOE' | 'DENTALLY' | 'SFD' | 'CARESTACK';
+  integration_id: string;
   integration_name: string;
   external_practice_id?: string;
   external_site_code?: string;
@@ -173,7 +174,9 @@ class PMSService {
   // Connection CRUD
   async listConnections(params?: {
     client_id?: string;
+    practice_id?: string;
     pms_type?: string;
+    integration_id?: string;
     status?: string;
     page?: number;
     page_size?: number;

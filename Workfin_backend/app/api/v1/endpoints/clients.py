@@ -16,7 +16,6 @@ from app.db.models import (
     User,
     UserRoleAssignment,
     ClientAdjustmentType,
-    ClientPMSIntegration,
     ClientDenpayPeriod,
     ClientFYEndPeriod
 )
@@ -49,6 +48,7 @@ async def get_clients(db: AsyncSession = Depends(get_db)):
         return [
             ClientListItem(
                 id=client.id,
+                tenant_id=client.tenant_id,
                 legal_trading_name=client.legal_trading_name,
                 workfin_reference=client.workfin_reference,
                 status=client.status,
@@ -76,8 +76,8 @@ async def get_client(client_id: str, db: AsyncSession = Depends(get_db)):
             .options(
                 selectinload(Client.address),
                 selectinload(Client.users),
+                selectinload(Client.practices),
                 selectinload(Client.adjustment_types),
-                selectinload(Client.pms_integrations),
                 selectinload(Client.denpay_periods),
                 selectinload(Client.fy_end_periods)
             )
@@ -195,17 +195,7 @@ async def create_client(client: ClientCreate, db: AsyncSession = Depends(get_db)
             )
             db.add(adj_type)
 
-        # Step 6: Create PMS integrations (if any)
-        for pms_data in client.pms_integrations or []:
-            pms_integration = ClientPMSIntegration(
-                client_id=new_client.id,
-                pms_type=pms_data.pms_type,
-                integration_config=pms_data.integration_config,
-                status=pms_data.status or "Active"
-            )
-            db.add(pms_integration)
-
-        # Step 7: Create Denpay periods (if any)
+        # Step 6: Create Denpay periods (if any)
         for period_data in client.denpay_periods or []:
             denpay_period = ClientDenpayPeriod(
                 client_id=new_client.id,
@@ -215,7 +205,7 @@ async def create_client(client: ClientCreate, db: AsyncSession = Depends(get_db)
             )
             db.add(denpay_period)
 
-        # Step 8: Create FY End periods (if any)
+        # Step 7: Create FY End periods (if any)
         for period_data in client.fy_end_periods or []:
             fy_end_period = ClientFYEndPeriod(
                 client_id=new_client.id,
@@ -235,8 +225,8 @@ async def create_client(client: ClientCreate, db: AsyncSession = Depends(get_db)
             .options(
                 selectinload(Client.address),
                 selectinload(Client.users),
+                selectinload(Client.practices),
                 selectinload(Client.adjustment_types),
-                selectinload(Client.pms_integrations),
                 selectinload(Client.denpay_periods),
                 selectinload(Client.fy_end_periods)
             )
@@ -264,8 +254,8 @@ async def update_client(client_id: str, client: ClientUpdate, db: AsyncSession =
             .options(
                 selectinload(Client.address),
                 selectinload(Client.users),
+                selectinload(Client.practices),
                 selectinload(Client.adjustment_types),
-                selectinload(Client.pms_integrations),
                 selectinload(Client.denpay_periods),
                 selectinload(Client.fy_end_periods)
             )
@@ -479,4 +469,37 @@ async def create_client_user(client_id: str, user_data: dict, db: AsyncSession =
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create user: {str(e)}"
+        )
+
+
+@router.get("/by-tenant/{tenant_id}", response_model=ClientResponse)
+async def get_client_by_tenant(tenant_id: str, db: AsyncSession = Depends(get_db)):
+    """Look up a client by its 8-digit tenant ID"""
+    try:
+        result = await db.execute(
+            select(Client)
+            .options(
+                selectinload(Client.address),
+                selectinload(Client.users),
+                selectinload(Client.adjustment_types),
+                selectinload(Client.denpay_periods),
+                selectinload(Client.fy_end_periods)
+            )
+            .where(Client.tenant_id == tenant_id)
+        )
+        client = result.scalar_one_or_none()
+
+        if not client:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Client with tenant ID '{tenant_id}' not found"
+            )
+
+        return ClientResponse.from_orm(client)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error: {str(e)}"
         )
