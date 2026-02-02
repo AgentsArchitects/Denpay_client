@@ -2,8 +2,9 @@
 SOE Data API Endpoints
 Reads synced SOE data from PostgreSQL (not blob storage)
 """
+import uuid as uuid_mod
 from typing import Optional
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
@@ -31,8 +32,9 @@ async def get_patients(
     count_query = select(func.count(SOEPatient.id))
 
     if connection_id:
-        query = query.where(SOEPatient.connection_id == connection_id)
-        count_query = count_query.where(SOEPatient.connection_id == connection_id)
+        conn_uuid = uuid_mod.UUID(connection_id)
+        query = query.where(SOEPatient.connection_id == conn_uuid)
+        count_query = count_query.where(SOEPatient.connection_id == conn_uuid)
     if patient_status:
         query = query.where(SOEPatient.patient_status == patient_status)
         count_query = count_query.where(SOEPatient.patient_status == patient_status)
@@ -83,8 +85,9 @@ async def get_appointments(
     count_query = select(func.count(SOEAppointment.id))
 
     if connection_id:
-        query = query.where(SOEAppointment.connection_id == connection_id)
-        count_query = count_query.where(SOEAppointment.connection_id == connection_id)
+        conn_uuid = uuid_mod.UUID(connection_id)
+        query = query.where(SOEAppointment.connection_id == conn_uuid)
+        count_query = count_query.where(SOEAppointment.connection_id == conn_uuid)
     if date_from:
         query = query.where(SOEAppointment.appointment_date >= date_from)
         count_query = count_query.where(SOEAppointment.appointment_date >= date_from)
@@ -127,8 +130,9 @@ async def get_providers(
     count_query = select(func.count(SOEProvider.id))
 
     if connection_id:
-        query = query.where(SOEProvider.connection_id == connection_id)
-        count_query = count_query.where(SOEProvider.connection_id == connection_id)
+        conn_uuid = uuid_mod.UUID(connection_id)
+        query = query.where(SOEProvider.connection_id == conn_uuid)
+        count_query = count_query.where(SOEProvider.connection_id == conn_uuid)
     if employment_status:
         query = query.where(SOEProvider.employment_status == employment_status)
         count_query = count_query.where(SOEProvider.employment_status == employment_status)
@@ -165,8 +169,9 @@ async def get_treatments(
     count_query = select(func.count(SOETreatment.id))
 
     if connection_id:
-        query = query.where(SOETreatment.connection_id == connection_id)
-        count_query = count_query.where(SOETreatment.connection_id == connection_id)
+        conn_uuid = uuid_mod.UUID(connection_id)
+        query = query.where(SOETreatment.connection_id == conn_uuid)
+        count_query = count_query.where(SOETreatment.connection_id == conn_uuid)
     if patient_id:
         query = query.where(SOETreatment.patient_id == patient_id)
         count_query = count_query.where(SOETreatment.patient_id == patient_id)

@@ -2,7 +2,7 @@
 PMS Integration API Endpoints
 Connection CRUD, sync triggers, and sync history
 """
-import uuid
+import uuid as uuid_mod
 from typing import Optional
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -19,6 +19,14 @@ from app.services.pms_sync_service import pms_sync_service
 from app.services.azure_blob_service import azure_blob_service
 
 router = APIRouter()
+
+
+def to_uuid(value: str) -> uuid_mod.UUID:
+    """Convert string to UUID, raising 400 if invalid"""
+    try:
+        return uuid_mod.UUID(value)
+    except (ValueError, AttributeError):
+        raise HTTPException(status_code=400, detail=f"Invalid UUID format: {value}")
 
 
 # ==================
@@ -39,8 +47,9 @@ async def list_connections(
     count_query = select(func.count(PMSConnection.id))
 
     if client_id:
-        query = query.where(PMSConnection.client_id == client_id)
-        count_query = count_query.where(PMSConnection.client_id == client_id)
+        client_uuid = to_uuid(client_id)
+        query = query.where(PMSConnection.client_id == client_uuid)
+        count_query = count_query.where(PMSConnection.client_id == client_uuid)
     if pms_type:
         query = query.where(PMSConnection.pms_type == pms_type)
         count_query = count_query.where(PMSConnection.pms_type == pms_type)
@@ -75,8 +84,9 @@ async def get_connection(
     db: AsyncSession = Depends(get_db)
 ):
     """Get a single PMS connection"""
+    conn_uuid = to_uuid(connection_id)
     result = await db.execute(
-        select(PMSConnection).where(PMSConnection.id == connection_id)
+        select(PMSConnection).where(PMSConnection.id == conn_uuid)
     )
     connection = result.scalar_one_or_none()
     if not connection:
@@ -90,10 +100,13 @@ async def create_connection(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new PMS connection"""
+    client_uuid = to_uuid(data.client_id)
+    practice_uuid = to_uuid(data.practice_id) if data.practice_id else None
+
     connection = PMSConnection(
-        id=uuid.uuid4(),
-        client_id=data.client_id,
-        practice_id=data.practice_id if data.practice_id else None,
+        id=uuid_mod.uuid4(),
+        client_id=client_uuid,
+        practice_id=practice_uuid,
         pms_type=data.pms_type.value,
         integration_name=data.integration_name,
         external_practice_id=data.external_practice_id,
@@ -121,8 +134,9 @@ async def update_connection(
     db: AsyncSession = Depends(get_db)
 ):
     """Update a PMS connection"""
+    conn_uuid = to_uuid(connection_id)
     result = await db.execute(
-        select(PMSConnection).where(PMSConnection.id == connection_id)
+        select(PMSConnection).where(PMSConnection.id == conn_uuid)
     )
     connection = result.scalar_one_or_none()
     if not connection:
@@ -144,8 +158,9 @@ async def deactivate_connection(
     db: AsyncSession = Depends(get_db)
 ):
     """Deactivate a PMS connection (soft delete)"""
+    conn_uuid = to_uuid(connection_id)
     result = await db.execute(
-        select(PMSConnection).where(PMSConnection.id == connection_id)
+        select(PMSConnection).where(PMSConnection.id == conn_uuid)
     )
     connection = result.scalar_one_or_none()
     if not connection:
@@ -167,8 +182,9 @@ async def test_connection(
     db: AsyncSession = Depends(get_db)
 ):
     """Test blob storage access for a connection"""
+    conn_uuid = to_uuid(connection_id)
     result = await db.execute(
-        select(PMSConnection).where(PMSConnection.id == connection_id)
+        select(PMSConnection).where(PMSConnection.id == conn_uuid)
     )
     connection = result.scalar_one_or_none()
     if not connection:
@@ -195,8 +211,9 @@ async def sync_connection(
     db: AsyncSession = Depends(get_db)
 ):
     """Trigger a full sync for all enabled entities"""
+    conn_uuid = to_uuid(connection_id)
     result = await db.execute(
-        select(PMSConnection).where(PMSConnection.id == connection_id)
+        select(PMSConnection).where(PMSConnection.id == conn_uuid)
     )
     connection = result.scalar_one_or_none()
     if not connection:
@@ -227,8 +244,9 @@ async def sync_entity(
             detail=f"Invalid entity type. Must be one of: {', '.join(valid_entities)}"
         )
 
+    conn_uuid = to_uuid(connection_id)
     result = await db.execute(
-        select(PMSConnection).where(PMSConnection.id == connection_id)
+        select(PMSConnection).where(PMSConnection.id == conn_uuid)
     )
     connection = result.scalar_one_or_none()
     if not connection:
@@ -266,15 +284,17 @@ async def get_sync_history(
     db: AsyncSession = Depends(get_db)
 ):
     """Get sync history for a connection"""
+    conn_uuid = to_uuid(connection_id)
+
     # Verify connection exists
     conn_result = await db.execute(
-        select(PMSConnection).where(PMSConnection.id == connection_id)
+        select(PMSConnection).where(PMSConnection.id == conn_uuid)
     )
     if not conn_result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Connection not found")
 
     count_query = select(func.count(SyncHistory.id)).where(
-        SyncHistory.connection_id == connection_id
+        SyncHistory.connection_id == conn_uuid
     )
     total_result = await db.execute(count_query)
     total = total_result.scalar()
@@ -282,7 +302,7 @@ async def get_sync_history(
     offset = (page - 1) * page_size
     query = (
         select(SyncHistory)
-        .where(SyncHistory.connection_id == connection_id)
+        .where(SyncHistory.connection_id == conn_uuid)
         .order_by(SyncHistory.started_at.desc())
         .offset(offset)
         .limit(page_size)
