@@ -127,9 +127,9 @@ async def sync_integrations_to_postgres(db: AsyncSession = Depends(get_db)):
             if existing:
                 await db.execute(
                     text('''UPDATE soe.soe_integrations
-                            SET integration_name = :iname, last_synced_at = NOW()
+                            SET integration_name = :iname, source_table = :src, last_synced_at = NOW()
                             WHERE integration_id = :iid'''),
-                    {"iid": item["integration_id"], "iname": item["integration_name"]}
+                    {"iid": item["integration_id"], "iname": item["integration_name"], "src": "all_tables"}
                 )
                 updated += 1
             else:

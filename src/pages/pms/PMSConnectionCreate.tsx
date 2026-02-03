@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, Select, Button, Card, message, Space, AutoComplete } from 'antd';
+import { Form, Input, Select, Button, Card, message, Space } from 'antd';
 import { ArrowLeftOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import pmsService, { PMSConnectionCreate } from '../../services/pmsService';
 
@@ -9,21 +9,6 @@ const PMSConnectionCreatePage: React.FC = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [selectedPMSType, setSelectedPMSType] = useState<string>('SOE');
-  const [goldLayerNames, setGoldLayerNames] = useState<string[]>([]);
-
-  useEffect(() => {
-    fetchGoldLayerNames();
-  }, []);
-
-  const fetchGoldLayerNames = async () => {
-    try {
-      const data = await pmsService.getSOEIntegrations();
-      setGoldLayerNames((data.integrations || []).map((i: any) => i.integration_name));
-    } catch (error) {
-      console.error('Failed to fetch Gold Layer integration names:', error);
-      setGoldLayerNames([]);
-    }
-  };
 
   const onFinish = async (values: any) => {
     setLoading(true);
@@ -71,9 +56,6 @@ const PMSConnectionCreatePage: React.FC = () => {
       sass_url: undefined,
       carestack_password: undefined,
     });
-    if (value === 'SOE') {
-      fetchGoldLayerNames();
-    }
   };
 
   const renderTypeSpecificFields = () => {
@@ -84,15 +66,8 @@ const PMSConnectionCreatePage: React.FC = () => {
             label="Integration Name"
             name="integration_name"
             rules={[{ required: true, message: 'Please enter integration name' }]}
-            extra="Type to see matching names from the Gold Layer"
           >
-            <AutoComplete
-              placeholder="Type integration name..."
-              options={goldLayerNames.map((name) => ({ value: name, label: name }))}
-              filterOption={(input, option) =>
-                (option?.value as string)?.toLowerCase().includes(input.toLowerCase())
-              }
-            />
+            <Input placeholder="Enter integration name" />
           </Form.Item>
         );
 

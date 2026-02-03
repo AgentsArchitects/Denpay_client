@@ -118,9 +118,9 @@ const XeroList: React.FC = () => {
     }
   };
 
-  const clientOptions = clients.map((c) => ({
+  const clientOptions = clients.map((c: any) => ({
     value: c.id || '',
-    label: c.legal_client_trading_name,
+    label: c.legal_client_trading_name || c.legal_trading_name || c.id,
   }));
 
   const getActionMenuItems = (record: XeroIntegration) => [

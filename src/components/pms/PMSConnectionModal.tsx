@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, message, AutoComplete } from 'antd';
+import { Modal, Form, Input, Select, message } from 'antd';
 import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import pmsService, { PMSConnectionCreate } from '../../services/pmsService';
 
@@ -23,7 +23,6 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [selectedPMSType, setSelectedPMSType] = useState<string>(pmsType || 'SOE');
-  const [goldLayerNames, setGoldLayerNames] = useState<string[]>([]);
 
   useEffect(() => {
     if (visible) {
@@ -33,21 +32,8 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
       if (pmsType) {
         form.setFieldsValue({ pms_type: pmsType });
       }
-      if (effectiveType === 'SOE') {
-        fetchGoldLayerNames();
-      }
     }
   }, [visible, pmsType, form]);
-
-  const fetchGoldLayerNames = async () => {
-    try {
-      const data = await pmsService.getSOEIntegrations();
-      setGoldLayerNames((data.integrations || []).map((i: any) => i.integration_name));
-    } catch (error) {
-      console.error('Failed to fetch Gold Layer integration names:', error);
-      setGoldLayerNames([]);
-    }
-  };
 
   const handleSubmit = async () => {
     try {
@@ -119,9 +105,6 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
       sass_url: undefined,
       carestack_password: undefined,
     });
-    if (value === 'SOE') {
-      fetchGoldLayerNames();
-    }
   };
 
   const getPMSTypeLabel = (type: string) => {
@@ -144,15 +127,8 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
             label="Integration Name"
             name="integration_name"
             rules={[{ required: true, message: 'Please enter integration name' }]}
-            extra="Type to see matching names from the Gold Layer"
           >
-            <AutoComplete
-              placeholder="Type integration name..."
-              options={goldLayerNames.map((name) => ({ value: name, label: name }))}
-              filterOption={(input, option) =>
-                (option?.value as string)?.toLowerCase().includes(input.toLowerCase())
-              }
-            />
+            <Input placeholder="Enter integration name" />
           </Form.Item>
         );
 

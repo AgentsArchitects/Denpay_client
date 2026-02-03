@@ -17,7 +17,8 @@
       "Bash(tree:*)",
       "Bash(find:*)",
       "Bash(git check-ignore:*)",
-      "Bash(ls \"d:\\\\Workfin_client_ui\\\\Workfin_backend\\\\static\\\\assets\"\" 2>NUL && echo \"exists\" || echo \"no static dir \")"
+      "Bash(ls \"d:\\\\Workfin_client_ui\\\\Workfin_backend\\\\static\\\\assets\"\" 2>NUL && echo \"exists\" || echo \"no static dir \")",
+      "Bash(xcopy:*)"
     ]
   }
 }
