@@ -67,7 +67,7 @@ class PMSConnectionUpdate(BaseModel):
 
 class PMSConnectionResponse(BaseModel):
     id: str
-    client_id: str
+    client_id: Optional[str] = None
     practice_id: Optional[str] = None
     pms_type: str
     integration_id: Optional[str] = None

@@ -4,6 +4,7 @@ import { SearchOutlined, PlusOutlined, PrinterOutlined, DownloadOutlined, Upload
 import type { ColumnsType } from 'antd/es/table';
 import { Link, useSearchParams } from 'react-router-dom';
 import xeroService from '../../services/xeroService';
+import clientService, { Client } from '../../services/clientService';
 import './XeroList.css';
 
 const { Option } = Select;
@@ -18,16 +19,31 @@ interface XeroIntegration {
 
 const XeroList: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const [selectedDental, setSelectedDental] = useState('dental-care');
+  const [selectedClient, setSelectedClient] = useState<string>('');
+  const [clients, setClients] = useState<Client[]>([]);
   const [activeTab, setActiveTab] = useState('all');
   const [connecting, setConnecting] = useState(false);
   const [_loading, setLoading] = useState(false);
   const [data, setData] = useState<XeroIntegration[]>([]);
 
-  // Fetch tenants on mount
+  // Fetch clients and tenants on mount
   useEffect(() => {
+    fetchClients();
     fetchTenants();
   }, []);
+
+  const fetchClients = async () => {
+    try {
+      const clientList = await clientService.getClients();
+      setClients(clientList);
+      if (clientList.length > 0 && !selectedClient) {
+        setSelectedClient(clientList[0].id || '');
+      }
+    } catch (error) {
+      console.error('Failed to fetch clients:', error);
+      setClients([]);
+    }
+  };
 
   // Check URL params for connection status after fetching tenants
   useEffect(() => {
@@ -102,15 +118,10 @@ const XeroList: React.FC = () => {
     }
   };
 
-  const dentalOptions = [
-    { value: 'dental-care', label: 'Dental Care' },
-    { value: 'sixsigma-hospital', label: 'SIXSIGMA Hospital' },
-    { value: 'horizon-hospital', label: 'Horizon Hospital' },
-    { value: 'bright-orthodontics', label: 'Bright Orthodontics Ltd' },
-    { value: 'six-sigma-hospital', label: 'Six Sigma Hospital' },
-    { value: 'umega-textiles', label: 'Umega Textiles' },
-    { value: 'esk-healthcare', label: 'ESK Healthcare Group Ltd' }
-  ];
+  const clientOptions = clients.map((c) => ({
+    value: c.id || '',
+    label: c.legal_client_trading_name,
+  }));
 
   const getActionMenuItems = (record: XeroIntegration) => [
     {
@@ -231,12 +242,13 @@ const XeroList: React.FC = () => {
         <h1 className="page-title">List</h1>
         <div className="header-actions">
           <Select
-            value={selectedDental}
-            onChange={setSelectedDental}
+            value={selectedClient || undefined}
+            onChange={setSelectedClient}
+            placeholder="Select Client"
             style={{ width: 250 }}
             size="large"
           >
-            {dentalOptions.map(option => (
+            {clientOptions.map(option => (
               <Option key={option.value} value={option.value}>
                 {option.label}
               </Option>

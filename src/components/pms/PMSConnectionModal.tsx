@@ -73,7 +73,7 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
         ...(clientId && { client_id: clientId }),
         ...(practiceId && { practice_id: practiceId }),
         pms_type: effectiveType,
-        integration_name: values.integration_name,
+        integration_name: values.integration_name || effectiveType,
         sync_config: Object.keys(syncConfig).length > 0 ? syncConfig : undefined,
         sync_patients: true,
         sync_appointments: true,
@@ -137,70 +137,42 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
   const renderTypeSpecificFields = () => {
     const effectiveType = selectedPMSType || pmsType || 'SOE';
 
-    // Integration ID - read-only, auto-generated on save
-    const integrationIdField = (
-      <Form.Item label="Integration ID">
-        <Input disabled placeholder="Auto-generated on save" />
-      </Form.Item>
-    );
-
     switch (effectiveType) {
       case 'SOE':
         return (
-          <>
-            <Form.Item
-              label="Integration Name"
-              name="integration_name"
-              rules={[{ required: true, message: 'Please enter integration name' }]}
-              extra="Type to see matching names from the Gold Layer"
-            >
-              <AutoComplete
-                placeholder="Type integration name..."
-                options={goldLayerNames.map((name) => ({ value: name, label: name }))}
-                filterOption={(input, option) =>
-                  (option?.value as string)?.toLowerCase().includes(input.toLowerCase())
-                }
-              />
-            </Form.Item>
-            {integrationIdField}
-          </>
+          <Form.Item
+            label="Integration Name"
+            name="integration_name"
+            rules={[{ required: true, message: 'Please enter integration name' }]}
+            extra="Type to see matching names from the Gold Layer"
+          >
+            <AutoComplete
+              placeholder="Type integration name..."
+              options={goldLayerNames.map((name) => ({ value: name, label: name }))}
+              filterOption={(input, option) =>
+                (option?.value as string)?.toLowerCase().includes(input.toLowerCase())
+              }
+            />
+          </Form.Item>
         );
 
       case 'DENTALLY':
         return (
-          <>
-            <Form.Item
-              label="Integration Name"
-              name="integration_name"
-              rules={[{ required: true, message: 'Please enter integration name' }]}
-            >
-              <Input placeholder="Enter integration name" />
-            </Form.Item>
-            {integrationIdField}
-            <Form.Item
-              label="Dentally API Key"
-              name="dentally_key"
-              rules={[{ required: true, message: 'Please enter Dentally API key' }]}
-            >
-              <Input.Password
-                placeholder="Enter Dentally API key"
-                iconRender={(vis) => (vis ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
-              />
-            </Form.Item>
-          </>
+          <Form.Item
+            label="Dentally API Key"
+            name="dentally_key"
+            rules={[{ required: true, message: 'Please enter Dentally API key' }]}
+          >
+            <Input.Password
+              placeholder="Enter Dentally API key"
+              iconRender={(vis) => (vis ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
+            />
+          </Form.Item>
         );
 
       case 'SFD':
         return (
           <>
-            <Form.Item
-              label="Integration Name"
-              name="integration_name"
-              rules={[{ required: true, message: 'Please enter integration name' }]}
-            >
-              <Input placeholder="Enter integration name" />
-            </Form.Item>
-            {integrationIdField}
             <Form.Item
               label="Database ID"
               name="database_id"
@@ -231,14 +203,6 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
       case 'CARESTACK':
         return (
           <>
-            <Form.Item
-              label="Integration Name"
-              name="integration_name"
-              rules={[{ required: true, message: 'Please enter integration name' }]}
-            >
-              <Input placeholder="Enter integration name" />
-            </Form.Item>
-            {integrationIdField}
             <Form.Item
               label="SaaS URL"
               name="sass_url"
@@ -299,6 +263,11 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
 
         {/* Type-specific fields */}
         {renderTypeSpecificFields()}
+
+        {/* Integration ID - always last, read-only */}
+        <Form.Item label="Integration ID">
+          <Input disabled placeholder="Auto-generated on save" />
+        </Form.Item>
       </Form>
     </Modal>
   );

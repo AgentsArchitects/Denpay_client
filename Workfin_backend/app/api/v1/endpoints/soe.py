@@ -140,7 +140,7 @@ async def sync_integrations_to_postgres(db: AsyncSession = Depends(get_db)):
                         "id": str(uuid.uuid4()),
                         "iid": item["integration_id"],
                         "iname": item["integration_name"],
-                        "src": "vw_DimPatients"
+                        "src": "all_tables"
                     }
                 )
                 created += 1

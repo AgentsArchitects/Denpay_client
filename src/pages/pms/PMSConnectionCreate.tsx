@@ -42,7 +42,7 @@ const PMSConnectionCreatePage: React.FC = () => {
 
       const data: PMSConnectionCreate = {
         pms_type: values.pms_type,
-        integration_name: values.integration_name,
+        integration_name: values.integration_name || values.pms_type,
         sync_config: Object.keys(syncConfig).length > 0 ? syncConfig : undefined,
         sync_patients: true,
         sync_appointments: true,
@@ -77,70 +77,42 @@ const PMSConnectionCreatePage: React.FC = () => {
   };
 
   const renderTypeSpecificFields = () => {
-    // Integration ID - read-only, auto-generated on save
-    const integrationIdField = (
-      <Form.Item label="Integration ID">
-        <Input disabled placeholder="Auto-generated on save" />
-      </Form.Item>
-    );
-
     switch (selectedPMSType) {
       case 'SOE':
         return (
-          <>
-            <Form.Item
-              label="Integration Name"
-              name="integration_name"
-              rules={[{ required: true, message: 'Please enter integration name' }]}
-              extra="Type to see matching names from the Gold Layer"
-            >
-              <AutoComplete
-                placeholder="Type integration name..."
-                options={goldLayerNames.map((name) => ({ value: name, label: name }))}
-                filterOption={(input, option) =>
-                  (option?.value as string)?.toLowerCase().includes(input.toLowerCase())
-                }
-              />
-            </Form.Item>
-            {integrationIdField}
-          </>
+          <Form.Item
+            label="Integration Name"
+            name="integration_name"
+            rules={[{ required: true, message: 'Please enter integration name' }]}
+            extra="Type to see matching names from the Gold Layer"
+          >
+            <AutoComplete
+              placeholder="Type integration name..."
+              options={goldLayerNames.map((name) => ({ value: name, label: name }))}
+              filterOption={(input, option) =>
+                (option?.value as string)?.toLowerCase().includes(input.toLowerCase())
+              }
+            />
+          </Form.Item>
         );
 
       case 'DENTALLY':
         return (
-          <>
-            <Form.Item
-              label="Integration Name"
-              name="integration_name"
-              rules={[{ required: true, message: 'Please enter integration name' }]}
-            >
-              <Input placeholder="Enter integration name" />
-            </Form.Item>
-            {integrationIdField}
-            <Form.Item
-              label="Dentally API Key"
-              name="dentally_key"
-              rules={[{ required: true, message: 'Please enter Dentally API key' }]}
-            >
-              <Input.Password
-                placeholder="Enter Dentally API key"
-                iconRender={(vis) => (vis ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
-              />
-            </Form.Item>
-          </>
+          <Form.Item
+            label="Dentally API Key"
+            name="dentally_key"
+            rules={[{ required: true, message: 'Please enter Dentally API key' }]}
+          >
+            <Input.Password
+              placeholder="Enter Dentally API key"
+              iconRender={(vis) => (vis ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
+            />
+          </Form.Item>
         );
 
       case 'SFD':
         return (
           <>
-            <Form.Item
-              label="Integration Name"
-              name="integration_name"
-              rules={[{ required: true, message: 'Please enter integration name' }]}
-            >
-              <Input placeholder="Enter integration name" />
-            </Form.Item>
-            {integrationIdField}
             <Form.Item
               label="Database ID"
               name="database_id"
@@ -171,14 +143,6 @@ const PMSConnectionCreatePage: React.FC = () => {
       case 'CARESTACK':
         return (
           <>
-            <Form.Item
-              label="Integration Name"
-              name="integration_name"
-              rules={[{ required: true, message: 'Please enter integration name' }]}
-            >
-              <Input placeholder="Enter integration name" />
-            </Form.Item>
-            {integrationIdField}
             <Form.Item
               label="SaaS URL"
               name="sass_url"
@@ -243,6 +207,11 @@ const PMSConnectionCreatePage: React.FC = () => {
 
           {/* Type-specific fields */}
           {renderTypeSpecificFields()}
+
+          {/* Integration ID - always last, read-only */}
+          <Form.Item label="Integration ID">
+            <Input disabled placeholder="Auto-generated on save" />
+          </Form.Item>
 
           <Form.Item>
             <Space>

@@ -146,48 +146,55 @@ class AzureBlobService:
 
     def get_soe_distinct_integrations(self) -> List[dict]:
         """
-        Get distinct integration_id + IntegrationName pairs from vw_DimPatients.
-        Only reads the 2 columns we need from each parquet file (much faster than full read).
+        Get distinct integration_id + IntegrationName pairs from ALL SOE tables.
+        Scans all 18 Gold Layer SOE tables, reading only the 2 columns we need
+        from each parquet file (much faster than full read).
         """
-        folder_path = "gold/soe/vw_DimPatients/"
-        files = self.list_files(folder_path)
-
-        if not files:
+        all_tables = self.get_available_soe_tables()
+        if not all_tables:
             return []
 
-        # First, discover column names from the first file
-        try:
-            first_df = self.read_parquet_file(files[0])
-            id_col = None
-            name_col = None
-            for col in first_df.columns:
-                if col.lower() == 'integration_id':
-                    id_col = col
-                if col.lower() == 'integrationname':
-                    name_col = col
-
-            if not id_col:
-                return []
-        except Exception as e:
-            print(f"Error reading first file for column discovery: {e}")
-            return []
-
-        # Now read only the needed columns from all files
-        cols_to_read = [id_col] + ([name_col] if name_col else [])
         all_pairs = set()
 
-        for file_path in files:
-            try:
-                df = self.read_parquet_columns(file_path, cols_to_read)
-                for _, row in df.drop_duplicates().iterrows():
-                    iid = str(row[id_col]) if pd.notna(row[id_col]) else None
-                    if not iid:
-                        continue
-                    iname = str(row[name_col]) if name_col and pd.notna(row[name_col]) else iid
-                    all_pairs.add((iid, iname))
-            except Exception as e:
-                print(f"Error reading {file_path}: {e}")
+        for table_name in all_tables:
+            folder_path = f"gold/soe/{table_name}/"
+            files = self.list_files(folder_path)
+            if not files:
                 continue
+
+            # Discover column names from the first file of this table
+            try:
+                first_df = self.read_parquet_file(files[0])
+                id_col = None
+                name_col = None
+                for col in first_df.columns:
+                    if col.lower() == 'integration_id':
+                        id_col = col
+                    if col.lower() == 'integrationname':
+                        name_col = col
+
+                if not id_col:
+                    # This table doesn't have integration_id column, skip it
+                    continue
+            except Exception as e:
+                print(f"Error reading first file of {table_name} for column discovery: {e}")
+                continue
+
+            # Read only the needed columns from all files in this table
+            cols_to_read = [id_col] + ([name_col] if name_col else [])
+
+            for file_path in files:
+                try:
+                    df = self.read_parquet_columns(file_path, cols_to_read)
+                    for _, row in df.drop_duplicates().iterrows():
+                        iid = str(row[id_col]) if pd.notna(row[id_col]) else None
+                        if not iid:
+                            continue
+                        iname = str(row[name_col]) if name_col and pd.notna(row[name_col]) else iid
+                        all_pairs.add((iid, iname))
+                except Exception as e:
+                    print(f"Error reading {file_path}: {e}")
+                    continue
 
         return [
             {"integration_id": iid, "integration_name": iname}
