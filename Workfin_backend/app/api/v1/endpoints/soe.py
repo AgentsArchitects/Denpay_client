@@ -73,7 +73,7 @@ async def get_soe_integrations():
     """Get distinct integration_id and IntegrationName pairs from Gold Layer SOE data"""
     try:
         # Read from vw_DimPatients which has both integration_id and IntegrationName
-        df = azure_blob_service.get_soe_data("vw_DimPatients", limit=5)
+        df = azure_blob_service.get_soe_data("vw_DimPatients")
 
         if df.empty:
             return {"integrations": []}
