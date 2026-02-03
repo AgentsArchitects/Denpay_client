@@ -1,14 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, Switch, message, Divider } from 'antd';
+import { Modal, Form, Input, Select, message, Spin } from 'antd';
 import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import pmsService, { PMSConnectionCreate } from '../../services/pmsService';
-
-interface Practice {
-  id: string;
-  name: string;
-  location_id: string;
-  status: string;
-}
 
 interface PMSConnectionModalProps {
   visible: boolean;
@@ -17,8 +10,11 @@ interface PMSConnectionModalProps {
   pmsType?: 'SOE' | 'DENTALLY' | 'SFD' | 'CARESTACK';
   clientId?: string;
   practiceId?: string;
-  practices?: Practice[];
-  simplified?: boolean;
+}
+
+interface SOEIntegration {
+  integration_id: string;
+  integration_name: string;
 }
 
 const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
@@ -28,12 +24,12 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
   pmsType,
   clientId,
   practiceId,
-  practices = [],
-  simplified = false,
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [selectedPMSType, setSelectedPMSType] = useState<string>(pmsType || 'SOE');
+  const [soeIntegrations, setSOEIntegrations] = useState<SOEIntegration[]>([]);
+  const [loadingIntegrations, setLoadingIntegrations] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -43,19 +39,34 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
       if (pmsType) {
         form.setFieldsValue({ pms_type: pmsType });
       }
-      if (practiceId) {
-        form.setFieldsValue({ practice_id: practiceId });
+      // Fetch SOE integrations when opening
+      if (effectiveType === 'SOE') {
+        fetchSOEIntegrations();
       }
     }
-  }, [visible, pmsType, practiceId, form]);
+  }, [visible, pmsType, form]);
+
+  const fetchSOEIntegrations = async () => {
+    setLoadingIntegrations(true);
+    try {
+      const data = await pmsService.getSOEIntegrations();
+      setSOEIntegrations(data.integrations || []);
+    } catch (error) {
+      console.error('Failed to fetch SOE integrations:', error);
+      setSOEIntegrations([]);
+    } finally {
+      setLoadingIntegrations(false);
+    }
+  };
 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       setLoading(true);
 
-      // Build sync_config from type-specific credential fields
       const effectiveType = values.pms_type || pmsType || selectedPMSType;
+
+      // Build sync_config for non-SOE types
       const syncConfig: Record<string, any> = {};
       if (effectiveType === 'DENTALLY') {
         if (values.dentally_key) syncConfig.dentally_key = values.dentally_key;
@@ -69,26 +80,18 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
       }
 
       const data: PMSConnectionCreate = {
-        ...values,
         ...(clientId && { client_id: clientId }),
-        ...(pmsType && { pms_type: pmsType }),
+        ...(practiceId && { practice_id: practiceId }),
         pms_type: effectiveType,
-        practice_id: values.practice_id || practiceId || undefined,
+        integration_name: values.integration_name,
+        external_practice_id: values.integration_id || undefined,
         sync_config: Object.keys(syncConfig).length > 0 ? syncConfig : undefined,
-        sync_patients: values.sync_patients ?? true,
-        sync_appointments: values.sync_appointments ?? true,
-        sync_providers: values.sync_providers ?? true,
-        sync_treatments: values.sync_treatments ?? false,
-        sync_billing: values.sync_billing ?? false,
+        sync_patients: true,
+        sync_appointments: true,
+        sync_providers: true,
+        sync_treatments: false,
+        sync_billing: false,
       };
-
-      // Remove UI-only fields that aren't part of the API
-      delete (data as any).dentally_key;
-      delete (data as any).database_id;
-      delete (data as any).sfd_username;
-      delete (data as any).sfd_password;
-      delete (data as any).sass_url;
-      delete (data as any).carestack_password;
 
       if (clientId) {
         const connection = await pmsService.createConnection(data);
@@ -118,11 +121,9 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
 
   const handlePMSTypeChange = (value: string) => {
     setSelectedPMSType(value);
-    // Clear type-specific fields when switching
     form.setFieldsValue({
       integration_name: undefined,
-      external_practice_id: undefined,
-      external_site_code: undefined,
+      integration_id: undefined,
       dentally_key: undefined,
       database_id: undefined,
       sfd_username: undefined,
@@ -130,6 +131,17 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
       sass_url: undefined,
       carestack_password: undefined,
     });
+    if (value === 'SOE') {
+      fetchSOEIntegrations();
+    }
+  };
+
+  const handleIntegrationNameChange = (value: string) => {
+    // Auto-populate integration_id when an integration name is selected
+    const selected = soeIntegrations.find((i) => i.integration_name === value);
+    if (selected) {
+      form.setFieldsValue({ integration_id: selected.integration_id });
+    }
   };
 
   const getPMSTypeLabel = (type: string) => {
@@ -149,60 +161,44 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
       case 'SOE':
         return (
           <>
-            {!simplified && <Divider>SOE Configuration</Divider>}
             <Form.Item
               label="Integration Name"
               name="integration_name"
-              rules={[{ required: true, message: 'Please enter integration name' }]}
-              tooltip="A friendly name for this SOE integration"
+              rules={[{ required: true, message: 'Please select an integration' }]}
             >
-              <Input placeholder="e.g., Charsfield SOE Integration" />
+              <Select
+                showSearch
+                placeholder={loadingIntegrations ? 'Loading integrations...' : 'Select an integration'}
+                loading={loadingIntegrations}
+                notFoundContent={loadingIntegrations ? <Spin size="small" /> : 'No integrations found'}
+                onChange={handleIntegrationNameChange}
+                filterOption={(input, option) =>
+                  (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+                }
+              >
+                {soeIntegrations.map((integration) => (
+                  <Select.Option key={integration.integration_id} value={integration.integration_name}>
+                    {integration.integration_name}
+                  </Select.Option>
+                ))}
+              </Select>
             </Form.Item>
             <Form.Item
-              label="External Practice ID"
-              name="external_practice_id"
-              rules={[{ required: true, message: 'Please enter external practice ID' }]}
-              tooltip="The integration_id from SOE data (e.g., 'EB3AE06' for MARD, '33F91ECD' for Charsfield)"
+              label="Integration ID"
+              name="integration_id"
             >
-              <Input placeholder="e.g., EB3AE06 or 33F91ECD" />
+              <Input disabled placeholder="Auto-populated from selection above" />
             </Form.Item>
-            {!simplified && (
-              <>
-                <Form.Item
-                  label="External Site Code (Optional)"
-                  name="external_site_code"
-                  tooltip="Site code if multiple sites share the same practice ID"
-                >
-                  <Input placeholder="Optional site code" />
-                </Form.Item>
-                <Form.Item label="Data Source" name="data_source">
-                  <Select>
-                    <Select.Option value="azure_blob">Azure Gold Layer</Select.Option>
-                    <Select.Option value="direct_api">Direct API</Select.Option>
-                  </Select>
-                </Form.Item>
-                <Form.Item label="Sync Frequency" name="sync_frequency">
-                  <Select>
-                    <Select.Option value="manual">Manual Only</Select.Option>
-                    <Select.Option value="hourly">Hourly</Select.Option>
-                    <Select.Option value="daily">Daily</Select.Option>
-                    <Select.Option value="weekly">Weekly</Select.Option>
-                  </Select>
-                </Form.Item>
-              </>
-            )}
           </>
         );
 
       case 'DENTALLY':
         return (
           <>
-            {!simplified && <Divider>Dentally Configuration</Divider>}
             <Form.Item
               label="Integration Name"
               name="integration_name"
               rules={[{ required: true, message: 'Please enter integration name' }]}
-              tooltip="A friendly name for this Dentally integration"
             >
               <Input placeholder="e.g., Main Practice Dentally" />
             </Form.Item>
@@ -210,7 +206,6 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
               label="Dentally API Key"
               name="dentally_key"
               rules={[{ required: true, message: 'Please enter Dentally API key' }]}
-              tooltip="The API key provided by Dentally for this practice"
             >
               <Input.Password
                 placeholder="Enter Dentally API key"
@@ -223,12 +218,10 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
       case 'SFD':
         return (
           <>
-            {!simplified && <Divider>SFD Configuration</Divider>}
             <Form.Item
               label="Integration Name"
               name="integration_name"
               rules={[{ required: true, message: 'Please enter integration name' }]}
-              tooltip="A friendly name for this SFD integration"
             >
               <Input placeholder="e.g., Clinic SFD Integration" />
             </Form.Item>
@@ -236,7 +229,6 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
               label="Database ID"
               name="database_id"
               rules={[{ required: true, message: 'Please enter Database ID' }]}
-              tooltip="The SFD database identifier"
             >
               <Input placeholder="Enter Database ID" />
             </Form.Item>
@@ -244,7 +236,6 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
               label="Username"
               name="sfd_username"
               rules={[{ required: true, message: 'Please enter username' }]}
-              tooltip="SFD login username"
             >
               <Input placeholder="Enter username" />
             </Form.Item>
@@ -252,7 +243,6 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
               label="Password"
               name="sfd_password"
               rules={[{ required: true, message: 'Please enter password' }]}
-              tooltip="SFD login password"
             >
               <Input.Password
                 placeholder="Enter password"
@@ -265,12 +255,10 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
       case 'CARESTACK':
         return (
           <>
-            {!simplified && <Divider>CareStack Configuration</Divider>}
             <Form.Item
               label="Integration Name"
               name="integration_name"
               rules={[{ required: true, message: 'Please enter integration name' }]}
-              tooltip="A friendly name for this CareStack integration"
             >
               <Input placeholder="e.g., Practice CareStack Integration" />
             </Form.Item>
@@ -278,7 +266,6 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
               label="SaaS URL"
               name="sass_url"
               rules={[{ required: true, message: 'Please enter SaaS URL' }]}
-              tooltip="The CareStack SaaS URL for this practice"
             >
               <Input placeholder="e.g., https://yourpractice.carestack.com" />
             </Form.Item>
@@ -286,7 +273,6 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
               label="Password"
               name="carestack_password"
               rules={[{ required: true, message: 'Please enter password' }]}
-              tooltip="CareStack API password"
             >
               <Input.Password
                 placeholder="Enter password"
@@ -308,7 +294,7 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
       onOk={handleSubmit}
       onCancel={handleCancel}
       confirmLoading={loading}
-      width={simplified ? 500 : 700}
+      width={500}
       okText="Create Integration"
     >
       <Form
@@ -316,17 +302,9 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
         layout="vertical"
         initialValues={{
           pms_type: pmsType || 'SOE',
-          practice_id: practiceId || undefined,
-          data_source: 'azure_blob',
-          sync_frequency: 'daily',
-          sync_patients: true,
-          sync_appointments: true,
-          sync_providers: true,
-          sync_treatments: false,
-          sync_billing: false,
         }}
       >
-        {/* PMS Type - FIRST field (shown when not pre-set) */}
+        {/* PMS Type - FIRST field */}
         {!pmsType && (
           <Form.Item
             label="PMS Type"
@@ -342,53 +320,8 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
           </Form.Item>
         )}
 
-        {/* Location/Practice dropdown - shown when practices are available */}
-        {!simplified && practices.length > 0 && (
-          <Form.Item
-            label="Location (Practice)"
-            name="practice_id"
-            tooltip="Select which practice/location this integration belongs to"
-          >
-            <Select placeholder="Select a location (optional)" allowClear>
-              {practices.map((p) => (
-                <Select.Option key={p.id} value={p.id}>
-                  {p.name} ({p.location_id})
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-        )}
-
-        {/* Show raw practice_id field only if no practices list and not simplified */}
-        {!simplified && practices.length === 0 && !practiceId && (
-          <Form.Item
-            label="Practice ID (Optional)"
-            name="practice_id"
-            tooltip="The UUID of the practice/location in WorkFin"
-          >
-            <Input placeholder="00000000-0000-0000-0000-000000000002" />
-          </Form.Item>
-        )}
-
-        {/* Type-specific credential fields */}
+        {/* Type-specific fields */}
         {renderTypeSpecificFields()}
-
-        {!simplified && <Divider>Sync Settings</Divider>}
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <Form.Item label="Sync Patients" name="sync_patients" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-          <Form.Item label="Sync Appointments" name="sync_appointments" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-          <Form.Item label="Sync Providers" name="sync_providers" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-          <Form.Item label="Sync Treatments" name="sync_treatments" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-        </div>
       </Form>
     </Modal>
   );

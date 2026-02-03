@@ -277,7 +277,6 @@ const PMSIntegrationSection: React.FC<PMSIntegrationSectionProps> = ({
           pmsType={selectedPMSType}
           clientId={clientId}
           practiceId={selectedPracticeId}
-          simplified={true}
         />
       </div>
     );
@@ -372,8 +371,6 @@ const PMSIntegrationSection: React.FC<PMSIntegrationSectionProps> = ({
         pmsType={selectedPMSType}
         clientId={clientId}
         practiceId={selectedPracticeId}
-        practices={practices}
-        simplified={false}
       />
     </div>
   );

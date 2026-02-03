@@ -291,6 +291,11 @@ class PMSService {
   }
 
   // SOE Blob Data (from Azure Gold Layer)
+  async getSOEIntegrations(): Promise<{ integrations: { integration_id: string; integration_name: string }[] }> {
+    const response = await apiClient.get(API_ENDPOINTS.SOE.INTEGRATIONS);
+    return response.data;
+  }
+
   async getSOETables(): Promise<{ tables: string[]; count: number }> {
     const response = await apiClient.get(API_ENDPOINTS.SOE.TABLES);
     return response.data;

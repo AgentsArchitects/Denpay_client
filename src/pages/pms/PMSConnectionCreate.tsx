@@ -1,19 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, Select, Switch, Button, Card, message, Space, Divider } from 'antd';
+import { Form, Input, Select, Button, Card, message, Space, Divider, Spin } from 'antd';
 import { ArrowLeftOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import pmsService, { PMSConnectionCreate } from '../../services/pmsService';
+
+interface SOEIntegration {
+  integration_id: string;
+  integration_name: string;
+}
 
 const PMSConnectionCreatePage: React.FC = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [selectedPMSType, setSelectedPMSType] = useState<string>('SOE');
+  const [soeIntegrations, setSOEIntegrations] = useState<SOEIntegration[]>([]);
+  const [loadingIntegrations, setLoadingIntegrations] = useState(false);
+
+  useEffect(() => {
+    fetchSOEIntegrations();
+  }, []);
+
+  const fetchSOEIntegrations = async () => {
+    setLoadingIntegrations(true);
+    try {
+      const data = await pmsService.getSOEIntegrations();
+      setSOEIntegrations(data.integrations || []);
+    } catch (error) {
+      console.error('Failed to fetch SOE integrations:', error);
+      setSOEIntegrations([]);
+    } finally {
+      setLoadingIntegrations(false);
+    }
+  };
 
   const onFinish = async (values: any) => {
     setLoading(true);
     try {
-      // Build sync_config from type-specific credential fields
       const syncConfig: Record<string, any> = {};
       if (values.pms_type === 'DENTALLY') {
         if (values.dentally_key) syncConfig.dentally_key = values.dentally_key;
@@ -29,16 +52,13 @@ const PMSConnectionCreatePage: React.FC = () => {
       const data: PMSConnectionCreate = {
         pms_type: values.pms_type,
         integration_name: values.integration_name,
-        external_practice_id: values.external_practice_id || undefined,
-        external_site_code: values.external_site_code || undefined,
-        data_source: values.data_source || undefined,
-        sync_frequency: values.sync_frequency || undefined,
+        external_practice_id: values.integration_id || undefined,
         sync_config: Object.keys(syncConfig).length > 0 ? syncConfig : undefined,
-        sync_patients: values.sync_patients ?? true,
-        sync_appointments: values.sync_appointments ?? true,
-        sync_providers: values.sync_providers ?? true,
-        sync_treatments: values.sync_treatments ?? false,
-        sync_billing: values.sync_billing ?? false,
+        sync_patients: true,
+        sync_appointments: true,
+        sync_providers: true,
+        sync_treatments: false,
+        sync_billing: false,
       };
       const connection = await pmsService.createConnection(data);
       message.success('PMS connection created successfully');
@@ -52,11 +72,9 @@ const PMSConnectionCreatePage: React.FC = () => {
 
   const handlePMSTypeChange = (value: string) => {
     setSelectedPMSType(value);
-    // Clear type-specific fields when switching
     form.setFieldsValue({
       integration_name: undefined,
-      external_practice_id: undefined,
-      external_site_code: undefined,
+      integration_id: undefined,
       dentally_key: undefined,
       database_id: undefined,
       sfd_username: undefined,
@@ -64,6 +82,16 @@ const PMSConnectionCreatePage: React.FC = () => {
       sass_url: undefined,
       carestack_password: undefined,
     });
+    if (value === 'SOE') {
+      fetchSOEIntegrations();
+    }
+  };
+
+  const handleIntegrationNameChange = (value: string) => {
+    const selected = soeIntegrations.find((i) => i.integration_name === value);
+    if (selected) {
+      form.setFieldsValue({ integration_id: selected.integration_id });
+    }
   };
 
   const renderTypeSpecificFields = () => {
@@ -71,43 +99,33 @@ const PMSConnectionCreatePage: React.FC = () => {
       case 'SOE':
         return (
           <>
-            <Divider>SOE Configuration</Divider>
             <Form.Item
               label="Integration Name"
               name="integration_name"
-              rules={[{ required: true, message: 'Please enter integration name' }]}
-              tooltip="A friendly name for this SOE integration"
+              rules={[{ required: true, message: 'Please select an integration' }]}
             >
-              <Input placeholder="e.g., Charsfield SOE Integration" />
-            </Form.Item>
-            <Form.Item
-              label="External Practice ID"
-              name="external_practice_id"
-              rules={[{ required: true, message: 'Please enter external practice ID' }]}
-              tooltip="The integration_id from SOE data (e.g., 'EB3AE06' for MARD, '33F91ECD' for Charsfield)"
-            >
-              <Input placeholder="e.g., EB3AE06 or 33F91ECD" />
-            </Form.Item>
-            <Form.Item
-              label="External Site Code (Optional)"
-              name="external_site_code"
-              tooltip="Site code if multiple sites share the same practice ID"
-            >
-              <Input placeholder="Optional site code" />
-            </Form.Item>
-            <Form.Item label="Data Source" name="data_source" tooltip="Where the data is sourced from">
-              <Select>
-                <Select.Option value="azure_blob">Azure Gold Layer</Select.Option>
-                <Select.Option value="direct_api">Direct API</Select.Option>
+              <Select
+                showSearch
+                placeholder={loadingIntegrations ? 'Loading integrations...' : 'Select an integration'}
+                loading={loadingIntegrations}
+                notFoundContent={loadingIntegrations ? <Spin size="small" /> : 'No integrations found'}
+                onChange={handleIntegrationNameChange}
+                filterOption={(input, option) =>
+                  (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+                }
+              >
+                {soeIntegrations.map((integration) => (
+                  <Select.Option key={integration.integration_id} value={integration.integration_name}>
+                    {integration.integration_name}
+                  </Select.Option>
+                ))}
               </Select>
             </Form.Item>
-            <Form.Item label="Sync Frequency" name="sync_frequency" tooltip="How often data should be synced">
-              <Select>
-                <Select.Option value="manual">Manual Only</Select.Option>
-                <Select.Option value="hourly">Hourly</Select.Option>
-                <Select.Option value="daily">Daily</Select.Option>
-                <Select.Option value="weekly">Weekly</Select.Option>
-              </Select>
+            <Form.Item
+              label="Integration ID"
+              name="integration_id"
+            >
+              <Input disabled placeholder="Auto-populated from selection above" />
             </Form.Item>
           </>
         );
@@ -115,12 +133,10 @@ const PMSConnectionCreatePage: React.FC = () => {
       case 'DENTALLY':
         return (
           <>
-            <Divider>Dentally Configuration</Divider>
             <Form.Item
               label="Integration Name"
               name="integration_name"
               rules={[{ required: true, message: 'Please enter integration name' }]}
-              tooltip="A friendly name for this Dentally integration"
             >
               <Input placeholder="e.g., Main Practice Dentally" />
             </Form.Item>
@@ -128,11 +144,10 @@ const PMSConnectionCreatePage: React.FC = () => {
               label="Dentally API Key"
               name="dentally_key"
               rules={[{ required: true, message: 'Please enter Dentally API key' }]}
-              tooltip="The API key provided by Dentally for this practice"
             >
               <Input.Password
                 placeholder="Enter Dentally API key"
-                iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
+                iconRender={(vis) => (vis ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
               />
             </Form.Item>
           </>
@@ -141,12 +156,10 @@ const PMSConnectionCreatePage: React.FC = () => {
       case 'SFD':
         return (
           <>
-            <Divider>SFD Configuration</Divider>
             <Form.Item
               label="Integration Name"
               name="integration_name"
               rules={[{ required: true, message: 'Please enter integration name' }]}
-              tooltip="A friendly name for this SFD integration"
             >
               <Input placeholder="e.g., Clinic SFD Integration" />
             </Form.Item>
@@ -154,7 +167,6 @@ const PMSConnectionCreatePage: React.FC = () => {
               label="Database ID"
               name="database_id"
               rules={[{ required: true, message: 'Please enter Database ID' }]}
-              tooltip="The SFD database identifier"
             >
               <Input placeholder="Enter Database ID" />
             </Form.Item>
@@ -162,7 +174,6 @@ const PMSConnectionCreatePage: React.FC = () => {
               label="Username"
               name="sfd_username"
               rules={[{ required: true, message: 'Please enter username' }]}
-              tooltip="SFD login username"
             >
               <Input placeholder="Enter username" />
             </Form.Item>
@@ -170,11 +181,10 @@ const PMSConnectionCreatePage: React.FC = () => {
               label="Password"
               name="sfd_password"
               rules={[{ required: true, message: 'Please enter password' }]}
-              tooltip="SFD login password"
             >
               <Input.Password
                 placeholder="Enter password"
-                iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
+                iconRender={(vis) => (vis ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
               />
             </Form.Item>
           </>
@@ -183,12 +193,10 @@ const PMSConnectionCreatePage: React.FC = () => {
       case 'CARESTACK':
         return (
           <>
-            <Divider>CareStack Configuration</Divider>
             <Form.Item
               label="Integration Name"
               name="integration_name"
               rules={[{ required: true, message: 'Please enter integration name' }]}
-              tooltip="A friendly name for this CareStack integration"
             >
               <Input placeholder="e.g., Practice CareStack Integration" />
             </Form.Item>
@@ -196,7 +204,6 @@ const PMSConnectionCreatePage: React.FC = () => {
               label="SaaS URL"
               name="sass_url"
               rules={[{ required: true, message: 'Please enter SaaS URL' }]}
-              tooltip="The CareStack SaaS URL for this practice"
             >
               <Input placeholder="e.g., https://yourpractice.carestack.com" />
             </Form.Item>
@@ -204,11 +211,10 @@ const PMSConnectionCreatePage: React.FC = () => {
               label="Password"
               name="carestack_password"
               rules={[{ required: true, message: 'Please enter password' }]}
-              tooltip="CareStack API password"
             >
               <Input.Password
                 placeholder="Enter password"
-                iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
+                iconRender={(vis) => (vis ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
               />
             </Form.Item>
           </>
@@ -239,13 +245,6 @@ const PMSConnectionCreatePage: React.FC = () => {
           onFinish={onFinish}
           initialValues={{
             pms_type: 'SOE',
-            data_source: 'azure_blob',
-            sync_frequency: 'daily',
-            sync_patients: true,
-            sync_appointments: true,
-            sync_providers: true,
-            sync_treatments: false,
-            sync_billing: false,
           }}
           style={{ maxWidth: 600 }}
         >
@@ -263,30 +262,8 @@ const PMSConnectionCreatePage: React.FC = () => {
             </Select>
           </Form.Item>
 
-          {/* Type-specific credential fields */}
+          {/* Type-specific fields */}
           {renderTypeSpecificFields()}
-
-          <Divider>Sync Settings</Divider>
-
-          <Form.Item label="Sync Patients" name="sync_patients" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-
-          <Form.Item label="Sync Appointments" name="sync_appointments" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-
-          <Form.Item label="Sync Providers" name="sync_providers" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-
-          <Form.Item label="Sync Treatments" name="sync_treatments" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-
-          <Form.Item label="Sync Billing" name="sync_billing" valuePropName="checked">
-            <Switch />
-          </Form.Item>
 
           <Form.Item>
             <Space>

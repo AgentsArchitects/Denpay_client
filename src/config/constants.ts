@@ -176,6 +176,7 @@ export const API_ENDPOINTS = {
   // SOE (Azure Gold Layer)
   SOE: {
     TABLES: '/soe/tables',
+    INTEGRATIONS: '/soe/integrations',
     PATIENTS: '/soe/patients',
     APPOINTMENTS: '/soe/appointments',
     DATA: (tableName: string) => `/soe/data/${tableName}`,

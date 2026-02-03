@@ -68,6 +68,50 @@ async def get_soe_table_data(
         raise HTTPException(status_code=500, detail=f"Failed to get SOE data: {str(e)}")
 
 
+@router.get("/integrations")
+async def get_soe_integrations():
+    """Get distinct integration_id and IntegrationName pairs from Gold Layer SOE data"""
+    try:
+        # Read from vw_DimPatients which has both integration_id and IntegrationName
+        df = azure_blob_service.get_soe_data("vw_DimPatients", limit=5)
+
+        if df.empty:
+            return {"integrations": []}
+
+        # Find the integration_id and IntegrationName columns (case-insensitive)
+        id_col = None
+        name_col = None
+        for col in df.columns:
+            if col.lower() == 'integration_id':
+                id_col = col
+            if col.lower() == 'integrationname':
+                name_col = col
+
+        if not id_col:
+            return {"integrations": [], "error": "integration_id column not found in data"}
+
+        # Get distinct pairs
+        if name_col:
+            pairs = df[[id_col, name_col]].drop_duplicates().dropna(subset=[id_col])
+            integrations = [
+                {
+                    "integration_id": str(row[id_col]),
+                    "integration_name": str(row[name_col]) if row[name_col] is not None else str(row[id_col])
+                }
+                for _, row in pairs.iterrows()
+            ]
+        else:
+            ids = df[id_col].dropna().unique()
+            integrations = [
+                {"integration_id": str(i), "integration_name": str(i)}
+                for i in ids
+            ]
+
+        return {"integrations": integrations}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get SOE integrations: {str(e)}")
+
+
 @router.get("/patients")
 async def get_patients(
     limit: Optional[int] = Query(100, description="Limit"),
