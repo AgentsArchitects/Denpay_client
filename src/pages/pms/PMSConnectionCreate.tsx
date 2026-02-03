@@ -1,36 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, Select, Button, Card, message, Space, Divider, Spin } from 'antd';
+import { Form, Input, Select, Button, Card, message, Space, AutoComplete } from 'antd';
 import { ArrowLeftOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import pmsService, { PMSConnectionCreate } from '../../services/pmsService';
-
-interface SOEIntegration {
-  integration_id: string;
-  integration_name: string;
-}
 
 const PMSConnectionCreatePage: React.FC = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [selectedPMSType, setSelectedPMSType] = useState<string>('SOE');
-  const [soeIntegrations, setSOEIntegrations] = useState<SOEIntegration[]>([]);
-  const [loadingIntegrations, setLoadingIntegrations] = useState(false);
+  const [goldLayerNames, setGoldLayerNames] = useState<string[]>([]);
 
   useEffect(() => {
-    fetchSOEIntegrations();
+    fetchGoldLayerNames();
   }, []);
 
-  const fetchSOEIntegrations = async () => {
-    setLoadingIntegrations(true);
+  const fetchGoldLayerNames = async () => {
     try {
       const data = await pmsService.getSOEIntegrations();
-      setSOEIntegrations(data.integrations || []);
+      setGoldLayerNames((data.integrations || []).map((i: any) => i.integration_name));
     } catch (error) {
-      console.error('Failed to fetch SOE integrations:', error);
-      setSOEIntegrations([]);
-    } finally {
-      setLoadingIntegrations(false);
+      console.error('Failed to fetch Gold Layer integration names:', error);
+      setGoldLayerNames([]);
     }
   };
 
@@ -52,7 +43,6 @@ const PMSConnectionCreatePage: React.FC = () => {
       const data: PMSConnectionCreate = {
         pms_type: values.pms_type,
         integration_name: values.integration_name,
-        external_practice_id: values.integration_id || undefined,
         sync_config: Object.keys(syncConfig).length > 0 ? syncConfig : undefined,
         sync_patients: true,
         sync_appointments: true,
@@ -61,7 +51,7 @@ const PMSConnectionCreatePage: React.FC = () => {
         sync_billing: false,
       };
       const connection = await pmsService.createConnection(data);
-      message.success('PMS connection created successfully');
+      message.success(`PMS connection created (ID: ${connection.integration_id})`);
       navigate(`/pms/connections/${connection.id}`);
     } catch (error: any) {
       message.error(error.message || 'Failed to create PMS connection');
@@ -74,7 +64,6 @@ const PMSConnectionCreatePage: React.FC = () => {
     setSelectedPMSType(value);
     form.setFieldsValue({
       integration_name: undefined,
-      integration_id: undefined,
       dentally_key: undefined,
       database_id: undefined,
       sfd_username: undefined,
@@ -83,18 +72,18 @@ const PMSConnectionCreatePage: React.FC = () => {
       carestack_password: undefined,
     });
     if (value === 'SOE') {
-      fetchSOEIntegrations();
-    }
-  };
-
-  const handleIntegrationNameChange = (value: string) => {
-    const selected = soeIntegrations.find((i) => i.integration_name === value);
-    if (selected) {
-      form.setFieldsValue({ integration_id: selected.integration_id });
+      fetchGoldLayerNames();
     }
   };
 
   const renderTypeSpecificFields = () => {
+    // Integration ID - read-only, auto-generated on save
+    const integrationIdField = (
+      <Form.Item label="Integration ID">
+        <Input disabled placeholder="Auto-generated on save" />
+      </Form.Item>
+    );
+
     switch (selectedPMSType) {
       case 'SOE':
         return (
@@ -102,31 +91,18 @@ const PMSConnectionCreatePage: React.FC = () => {
             <Form.Item
               label="Integration Name"
               name="integration_name"
-              rules={[{ required: true, message: 'Please select an integration' }]}
+              rules={[{ required: true, message: 'Please enter integration name' }]}
+              extra="Type to see matching names from the Gold Layer"
             >
-              <Select
-                showSearch
-                placeholder={loadingIntegrations ? 'Loading integrations...' : 'Select an integration'}
-                loading={loadingIntegrations}
-                notFoundContent={loadingIntegrations ? <Spin size="small" /> : 'No integrations found'}
-                onChange={handleIntegrationNameChange}
+              <AutoComplete
+                placeholder="Type integration name..."
+                options={goldLayerNames.map((name) => ({ value: name, label: name }))}
                 filterOption={(input, option) =>
-                  (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+                  (option?.value as string)?.toLowerCase().includes(input.toLowerCase())
                 }
-              >
-                {soeIntegrations.map((integration) => (
-                  <Select.Option key={integration.integration_id} value={integration.integration_name}>
-                    {integration.integration_name}
-                  </Select.Option>
-                ))}
-              </Select>
+              />
             </Form.Item>
-            <Form.Item
-              label="Integration ID"
-              name="integration_id"
-            >
-              <Input disabled placeholder="Auto-populated from selection above" />
-            </Form.Item>
+            {integrationIdField}
           </>
         );
 
@@ -138,8 +114,9 @@ const PMSConnectionCreatePage: React.FC = () => {
               name="integration_name"
               rules={[{ required: true, message: 'Please enter integration name' }]}
             >
-              <Input placeholder="e.g., Main Practice Dentally" />
+              <Input placeholder="Enter integration name" />
             </Form.Item>
+            {integrationIdField}
             <Form.Item
               label="Dentally API Key"
               name="dentally_key"
@@ -161,8 +138,9 @@ const PMSConnectionCreatePage: React.FC = () => {
               name="integration_name"
               rules={[{ required: true, message: 'Please enter integration name' }]}
             >
-              <Input placeholder="e.g., Clinic SFD Integration" />
+              <Input placeholder="Enter integration name" />
             </Form.Item>
+            {integrationIdField}
             <Form.Item
               label="Database ID"
               name="database_id"
@@ -198,8 +176,9 @@ const PMSConnectionCreatePage: React.FC = () => {
               name="integration_name"
               rules={[{ required: true, message: 'Please enter integration name' }]}
             >
-              <Input placeholder="e.g., Practice CareStack Integration" />
+              <Input placeholder="Enter integration name" />
             </Form.Item>
+            {integrationIdField}
             <Form.Item
               label="SaaS URL"
               name="sass_url"

@@ -91,6 +91,19 @@ class FieldMapping(Base):
 # SOE SCHEMA
 # =====================
 
+class SOEIntegration(Base):
+    """Stores distinct integration_id + IntegrationName pairs from Gold Layer.
+    Synced from Azure Blob parquet data to avoid slow blob reads on every dropdown load."""
+    __tablename__ = "soe_integrations"
+    __table_args__ = {"schema": SOE_SCHEMA}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    integration_id = Column(String, nullable=False, unique=True)
+    integration_name = Column(String, nullable=False)
+    source_table = Column(String, nullable=True, default="vw_DimPatients")
+    last_synced_at = Column(DateTime(timezone=True), nullable=True, server_default=func.now())
+
+
 class SOEPatient(Base):
     __tablename__ = "patients"
     __table_args__ = (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, message, Spin } from 'antd';
+import { Modal, Form, Input, Select, message, AutoComplete } from 'antd';
 import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import pmsService, { PMSConnectionCreate } from '../../services/pmsService';
 
@@ -10,11 +10,6 @@ interface PMSConnectionModalProps {
   pmsType?: 'SOE' | 'DENTALLY' | 'SFD' | 'CARESTACK';
   clientId?: string;
   practiceId?: string;
-}
-
-interface SOEIntegration {
-  integration_id: string;
-  integration_name: string;
 }
 
 const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
@@ -28,8 +23,7 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [selectedPMSType, setSelectedPMSType] = useState<string>(pmsType || 'SOE');
-  const [soeIntegrations, setSOEIntegrations] = useState<SOEIntegration[]>([]);
-  const [loadingIntegrations, setLoadingIntegrations] = useState(false);
+  const [goldLayerNames, setGoldLayerNames] = useState<string[]>([]);
 
   useEffect(() => {
     if (visible) {
@@ -39,23 +33,19 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
       if (pmsType) {
         form.setFieldsValue({ pms_type: pmsType });
       }
-      // Fetch SOE integrations when opening
       if (effectiveType === 'SOE') {
-        fetchSOEIntegrations();
+        fetchGoldLayerNames();
       }
     }
   }, [visible, pmsType, form]);
 
-  const fetchSOEIntegrations = async () => {
-    setLoadingIntegrations(true);
+  const fetchGoldLayerNames = async () => {
     try {
       const data = await pmsService.getSOEIntegrations();
-      setSOEIntegrations(data.integrations || []);
+      setGoldLayerNames((data.integrations || []).map((i: any) => i.integration_name));
     } catch (error) {
-      console.error('Failed to fetch SOE integrations:', error);
-      setSOEIntegrations([]);
-    } finally {
-      setLoadingIntegrations(false);
+      console.error('Failed to fetch Gold Layer integration names:', error);
+      setGoldLayerNames([]);
     }
   };
 
@@ -84,7 +74,6 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
         ...(practiceId && { practice_id: practiceId }),
         pms_type: effectiveType,
         integration_name: values.integration_name,
-        external_practice_id: values.integration_id || undefined,
         sync_config: Object.keys(syncConfig).length > 0 ? syncConfig : undefined,
         sync_patients: true,
         sync_appointments: true,
@@ -123,7 +112,6 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
     setSelectedPMSType(value);
     form.setFieldsValue({
       integration_name: undefined,
-      integration_id: undefined,
       dentally_key: undefined,
       database_id: undefined,
       sfd_username: undefined,
@@ -132,15 +120,7 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
       carestack_password: undefined,
     });
     if (value === 'SOE') {
-      fetchSOEIntegrations();
-    }
-  };
-
-  const handleIntegrationNameChange = (value: string) => {
-    // Auto-populate integration_id when an integration name is selected
-    const selected = soeIntegrations.find((i) => i.integration_name === value);
-    if (selected) {
-      form.setFieldsValue({ integration_id: selected.integration_id });
+      fetchGoldLayerNames();
     }
   };
 
@@ -157,6 +137,13 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
   const renderTypeSpecificFields = () => {
     const effectiveType = selectedPMSType || pmsType || 'SOE';
 
+    // Integration ID - read-only, auto-generated on save
+    const integrationIdField = (
+      <Form.Item label="Integration ID">
+        <Input disabled placeholder="Auto-generated on save" />
+      </Form.Item>
+    );
+
     switch (effectiveType) {
       case 'SOE':
         return (
@@ -164,31 +151,18 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
             <Form.Item
               label="Integration Name"
               name="integration_name"
-              rules={[{ required: true, message: 'Please select an integration' }]}
+              rules={[{ required: true, message: 'Please enter integration name' }]}
+              extra="Type to see matching names from the Gold Layer"
             >
-              <Select
-                showSearch
-                placeholder={loadingIntegrations ? 'Loading integrations...' : 'Select an integration'}
-                loading={loadingIntegrations}
-                notFoundContent={loadingIntegrations ? <Spin size="small" /> : 'No integrations found'}
-                onChange={handleIntegrationNameChange}
+              <AutoComplete
+                placeholder="Type integration name..."
+                options={goldLayerNames.map((name) => ({ value: name, label: name }))}
                 filterOption={(input, option) =>
-                  (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+                  (option?.value as string)?.toLowerCase().includes(input.toLowerCase())
                 }
-              >
-                {soeIntegrations.map((integration) => (
-                  <Select.Option key={integration.integration_id} value={integration.integration_name}>
-                    {integration.integration_name}
-                  </Select.Option>
-                ))}
-              </Select>
+              />
             </Form.Item>
-            <Form.Item
-              label="Integration ID"
-              name="integration_id"
-            >
-              <Input disabled placeholder="Auto-populated from selection above" />
-            </Form.Item>
+            {integrationIdField}
           </>
         );
 
@@ -200,8 +174,9 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
               name="integration_name"
               rules={[{ required: true, message: 'Please enter integration name' }]}
             >
-              <Input placeholder="e.g., Main Practice Dentally" />
+              <Input placeholder="Enter integration name" />
             </Form.Item>
+            {integrationIdField}
             <Form.Item
               label="Dentally API Key"
               name="dentally_key"
@@ -223,8 +198,9 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
               name="integration_name"
               rules={[{ required: true, message: 'Please enter integration name' }]}
             >
-              <Input placeholder="e.g., Clinic SFD Integration" />
+              <Input placeholder="Enter integration name" />
             </Form.Item>
+            {integrationIdField}
             <Form.Item
               label="Database ID"
               name="database_id"
@@ -260,8 +236,9 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
               name="integration_name"
               rules={[{ required: true, message: 'Please enter integration name' }]}
             >
-              <Input placeholder="e.g., Practice CareStack Integration" />
+              <Input placeholder="Enter integration name" />
             </Form.Item>
+            {integrationIdField}
             <Form.Item
               label="SaaS URL"
               name="sass_url"

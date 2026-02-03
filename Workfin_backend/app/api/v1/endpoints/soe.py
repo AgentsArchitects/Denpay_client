@@ -3,8 +3,12 @@ SOE Data API Endpoints
 """
 from typing import List, Optional
 import math
-from fastapi import APIRouter, HTTPException, Query
+import uuid
+from fastapi import APIRouter, HTTPException, Query, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 from app.services.azure_blob_service import azure_blob_service
+from app.db.database import get_db
 
 router = APIRouter()
 
@@ -69,47 +73,89 @@ async def get_soe_table_data(
 
 
 @router.get("/integrations")
-async def get_soe_integrations():
-    """Get distinct integration_id and IntegrationName pairs from Gold Layer SOE data"""
+async def get_soe_integrations(db: AsyncSession = Depends(get_db)):
+    """Get distinct integration_id and IntegrationName pairs.
+    First tries PostgreSQL (fast), falls back to Azure Blob if PostgreSQL is empty."""
     try:
-        # Read from vw_DimPatients which has both integration_id and IntegrationName
-        df = azure_blob_service.get_soe_data("vw_DimPatients")
+        # Try PostgreSQL first (fast)
+        result = await db.execute(
+            text('SELECT integration_id, integration_name FROM soe.soe_integrations ORDER BY integration_name')
+        )
+        rows = result.fetchall()
 
-        if df.empty:
-            return {"integrations": []}
-
-        # Find the integration_id and IntegrationName columns (case-insensitive)
-        id_col = None
-        name_col = None
-        for col in df.columns:
-            if col.lower() == 'integration_id':
-                id_col = col
-            if col.lower() == 'integrationname':
-                name_col = col
-
-        if not id_col:
-            return {"integrations": [], "error": "integration_id column not found in data"}
-
-        # Get distinct pairs
-        if name_col:
-            pairs = df[[id_col, name_col]].drop_duplicates().dropna(subset=[id_col])
+        if rows:
             integrations = [
-                {
-                    "integration_id": str(row[id_col]),
-                    "integration_name": str(row[name_col]) if row[name_col] is not None else str(row[id_col])
-                }
-                for _, row in pairs.iterrows()
+                {"integration_id": row[0], "integration_name": row[1]}
+                for row in rows
             ]
-        else:
-            ids = df[id_col].dropna().unique()
-            integrations = [
-                {"integration_id": str(i), "integration_name": str(i)}
-                for i in ids
-            ]
+            return {"integrations": integrations, "source": "postgresql"}
 
-        return {"integrations": integrations}
+        # Fallback to Azure Blob (slower but works before first sync)
+        integrations = azure_blob_service.get_soe_distinct_integrations()
+        return {"integrations": integrations, "source": "azure_blob"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get SOE integrations: {str(e)}")
+        # If PostgreSQL table doesn't exist yet, fall back to blob
+        try:
+            integrations = azure_blob_service.get_soe_distinct_integrations()
+            return {"integrations": integrations, "source": "azure_blob"}
+        except Exception as e2:
+            raise HTTPException(status_code=500, detail=f"Failed to get SOE integrations: {str(e2)}")
+
+
+@router.post("/sync/integrations")
+async def sync_integrations_to_postgres(db: AsyncSession = Depends(get_db)):
+    """Sync distinct integration_id + IntegrationName from Gold Layer parquet to PostgreSQL.
+    This populates the soe.soe_integrations table for fast dropdown lookups."""
+    try:
+        # Read from Azure Blob Gold Layer
+        integrations = azure_blob_service.get_soe_distinct_integrations()
+
+        if not integrations:
+            return {"status": "warning", "message": "No integrations found in Gold Layer", "synced": 0}
+
+        # Upsert into PostgreSQL
+        created = 0
+        updated = 0
+        for item in integrations:
+            # Check if exists
+            result = await db.execute(
+                text('SELECT id FROM soe.soe_integrations WHERE integration_id = :iid'),
+                {"iid": item["integration_id"]}
+            )
+            existing = result.fetchone()
+
+            if existing:
+                await db.execute(
+                    text('''UPDATE soe.soe_integrations
+                            SET integration_name = :iname, last_synced_at = NOW()
+                            WHERE integration_id = :iid'''),
+                    {"iid": item["integration_id"], "iname": item["integration_name"]}
+                )
+                updated += 1
+            else:
+                await db.execute(
+                    text('''INSERT INTO soe.soe_integrations (id, integration_id, integration_name, source_table, last_synced_at)
+                            VALUES (:id, :iid, :iname, :src, NOW())'''),
+                    {
+                        "id": str(uuid.uuid4()),
+                        "iid": item["integration_id"],
+                        "iname": item["integration_name"],
+                        "src": "vw_DimPatients"
+                    }
+                )
+                created += 1
+
+        await db.commit()
+
+        return {
+            "status": "success",
+            "message": f"Synced {len(integrations)} integrations to PostgreSQL",
+            "created": created,
+            "updated": updated,
+            "total": len(integrations)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to sync integrations: {str(e)}")
 
 
 @router.get("/patients")

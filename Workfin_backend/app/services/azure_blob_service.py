@@ -131,6 +131,69 @@ class AzureBlobService:
 
         return df
 
+    def read_parquet_columns(self, blob_path: str, columns: List[str]) -> pd.DataFrame:
+        """Read only specific columns from a parquet file (much faster for large files)"""
+        container_client = self._get_container_client()
+        blob_client = container_client.get_blob_client(blob_path)
+
+        stream = io.BytesIO()
+        blob_data = blob_client.download_blob()
+        blob_data.readinto(stream)
+        stream.seek(0)
+
+        df = pd.read_parquet(stream, columns=columns)
+        return df
+
+    def get_soe_distinct_integrations(self) -> List[dict]:
+        """
+        Get distinct integration_id + IntegrationName pairs from vw_DimPatients.
+        Only reads the 2 columns we need from each parquet file (much faster than full read).
+        """
+        folder_path = "gold/soe/vw_DimPatients/"
+        files = self.list_files(folder_path)
+
+        if not files:
+            return []
+
+        # First, discover column names from the first file
+        try:
+            first_df = self.read_parquet_file(files[0])
+            id_col = None
+            name_col = None
+            for col in first_df.columns:
+                if col.lower() == 'integration_id':
+                    id_col = col
+                if col.lower() == 'integrationname':
+                    name_col = col
+
+            if not id_col:
+                return []
+        except Exception as e:
+            print(f"Error reading first file for column discovery: {e}")
+            return []
+
+        # Now read only the needed columns from all files
+        cols_to_read = [id_col] + ([name_col] if name_col else [])
+        all_pairs = set()
+
+        for file_path in files:
+            try:
+                df = self.read_parquet_columns(file_path, cols_to_read)
+                for _, row in df.drop_duplicates().iterrows():
+                    iid = str(row[id_col]) if pd.notna(row[id_col]) else None
+                    if not iid:
+                        continue
+                    iname = str(row[name_col]) if name_col and pd.notna(row[name_col]) else iid
+                    all_pairs.add((iid, iname))
+            except Exception as e:
+                print(f"Error reading {file_path}: {e}")
+                continue
+
+        return [
+            {"integration_id": iid, "integration_name": iname}
+            for iid, iname in sorted(all_pairs, key=lambda x: x[1])
+        ]
+
     def get_available_soe_tables(self) -> List[str]:
         """Get list of available SOE tables"""
         return self.list_folders("gold/soe/")
