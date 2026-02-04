@@ -2,10 +2,11 @@
 PMS Integration Schemas
 Pydantic models for PMS API requests and responses
 """
-from pydantic import BaseModel
-from typing import Optional, List
+from pydantic import BaseModel, field_validator
+from typing import Optional, List, Any
 from datetime import datetime, date, time
 from enum import Enum
+import uuid as uuid_mod
 
 
 class PMSType(str, Enum):
@@ -89,6 +90,15 @@ class PMSConnectionResponse(BaseModel):
     last_sync_records_count: Optional[int] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+
+    @field_validator('id', 'client_id', 'practice_id', mode='before')
+    @classmethod
+    def uuid_to_str(cls, v: Any) -> Optional[str]:
+        if v is None:
+            return None
+        if isinstance(v, uuid_mod.UUID):
+            return str(v)
+        return v
 
     class Config:
         from_attributes = True

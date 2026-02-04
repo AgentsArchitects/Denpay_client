@@ -144,40 +144,59 @@ class AzureBlobService:
         df = pd.read_parquet(stream, columns=columns)
         return df
 
+    def _get_parquet_columns(self, blob_path: str) -> List[str]:
+        """Read only the column names from a parquet file (very fast, no data read)"""
+        import pyarrow.parquet as pq
+        container_client = self._get_container_client()
+        blob_client = container_client.get_blob_client(blob_path)
+
+        stream = io.BytesIO()
+        blob_data = blob_client.download_blob()
+        blob_data.readinto(stream)
+        stream.seek(0)
+
+        schema = pq.read_schema(stream)
+        return schema.names
+
     def get_soe_distinct_integrations(self) -> List[dict]:
         """
-        Get distinct integration_id + IntegrationName pairs from ALL SOE tables.
-        Scans all 18 Gold Layer SOE tables, reading only the 2 columns we need
-        from each parquet file (much faster than full read).
+        Get distinct integration_id + IntegrationName pairs from SOE tables.
+        Optimized: tries vw_DimPatients first (known to have both columns),
+        then falls back to other tables only if needed. Reads only the 2
+        needed columns from each parquet file.
         """
         all_tables = self.get_available_soe_tables()
         if not all_tables:
             return []
 
+        # Try vw_DimPatients first since it's known to have both columns
+        priority_tables = ["vw_DimPatients"]
+        other_tables = [t for t in all_tables if t != "vw_DimPatients"]
+        ordered_tables = priority_tables + other_tables
+
         all_pairs = set()
 
-        for table_name in all_tables:
+        for table_name in ordered_tables:
             folder_path = f"gold/soe/{table_name}/"
             files = self.list_files(folder_path)
             if not files:
                 continue
 
-            # Discover column names from the first file of this table
+            # Discover column names from schema only (no data read)
             try:
-                first_df = self.read_parquet_file(files[0])
+                columns = self._get_parquet_columns(files[0])
                 id_col = None
                 name_col = None
-                for col in first_df.columns:
+                for col in columns:
                     if col.lower() == 'integration_id':
                         id_col = col
                     if col.lower() == 'integrationname':
                         name_col = col
 
                 if not id_col:
-                    # This table doesn't have integration_id column, skip it
                     continue
             except Exception as e:
-                print(f"Error reading first file of {table_name} for column discovery: {e}")
+                print(f"Error reading schema of {table_name}: {e}")
                 continue
 
             # Read only the needed columns from all files in this table
@@ -195,6 +214,10 @@ class AzureBlobService:
                 except Exception as e:
                     print(f"Error reading {file_path}: {e}")
                     continue
+
+            # If we found integrations from this table, no need to scan more
+            if all_pairs:
+                break
 
         return [
             {"integration_id": iid, "integration_name": iname}

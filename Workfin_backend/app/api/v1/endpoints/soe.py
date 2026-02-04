@@ -47,7 +47,7 @@ async def get_soe_table_data(
     """Get data from a specific SOE table with optional integration_id filtering"""
     try:
         # Read data from blob storage (with integration_id filter if provided)
-        df = azure_blob_service.get_soe_data(table_name, limit=5, integration_id=integration_id)
+        df = azure_blob_service.get_soe_data(table_name, limit=None, integration_id=integration_id)
 
         if df.empty:
             return {"data": [], "total": 0, "table": table_name}
