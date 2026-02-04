@@ -175,7 +175,7 @@ async def deactivate_connection(
     if not connection:
         raise HTTPException(status_code=404, detail="Connection not found")
 
-    connection.connection_status = "inactive"
+    connection.connection_status = "DISABLED"
     connection.updated_at = datetime.now(timezone.utc)
     await db.commit()
     return {"message": "Connection deactivated", "id": str(connection.id)}
