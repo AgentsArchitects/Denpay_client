@@ -40,8 +40,8 @@ class PMSConnectionCreate(BaseModel):
     integration_name: str
     external_practice_id: Optional[str] = None
     external_site_code: Optional[str] = None
-    data_source: Optional[str] = "azure_blob"
-    sync_frequency: Optional[str] = "daily"
+    data_source: Optional[str] = "GOLD_LAYER"
+    sync_frequency: Optional[str] = "DAILY"
     sync_config: Optional[dict] = None
     sync_patients: bool = True
     sync_appointments: bool = True
