@@ -11,6 +11,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy import select, func
 import pandas as pd
 
+from sqlalchemy import text as sa_text
 from app.db.pms_models import (
     PMSConnection, SyncHistory,
     SOEPatient, SOEAppointment, SOEProvider, SOETreatment
@@ -139,6 +140,28 @@ def derive_patient_status(row: dict) -> Optional[str]:
 
 class PMSSyncService:
 
+    async def _resolve_soe_integration_id(self, db: AsyncSession, connection: PMSConnection) -> Optional[str]:
+        """Look up the SOE integration_id from soe.soe_integrations using the connection's integration_name.
+        Falls back to connection.external_practice_id if set."""
+        # If external_practice_id is explicitly set, use it
+        if connection.external_practice_id:
+            return connection.external_practice_id
+
+        # Look up by integration_name in soe.soe_integrations
+        if connection.integration_name:
+            try:
+                result = await db.execute(
+                    sa_text("SELECT integration_id FROM soe.soe_integrations WHERE integration_name = :name LIMIT 1"),
+                    {"name": connection.integration_name}
+                )
+                row = result.fetchone()
+                if row:
+                    return row[0]
+            except Exception:
+                pass
+
+        return None
+
     async def sync_entity(
         self,
         db: AsyncSession,
@@ -253,26 +276,19 @@ class PMSSyncService:
         """Sync patients from vw_DimPatients and debtor4"""
         stats = {"records_processed": 0, "records_created": 0, "records_updated": 0, "records_skipped": 0, "records_failed": 0}
         now = datetime.now(timezone.utc)
-        integration_id = connection.external_practice_id
+        integration_id = await self._resolve_soe_integration_id(db, connection)
 
-        # Step 1: Read vw_DimPatients for base patient data
+        # Step 1: Read vw_DimPatients for base patient data (filtered at read time)
         try:
-            dim_df = azure_blob_service.get_soe_data("vw_DimPatients")
+            dim_df = azure_blob_service.get_soe_data("vw_DimPatients", integration_id=integration_id)
         except Exception:
             dim_df = pd.DataFrame()
 
-        # Step 2: Read debtor4 for enrichment
+        # Step 2: Read debtor4 for enrichment (filtered at read time)
         try:
-            debtor_df = azure_blob_service.get_soe_data("debtor4")
+            debtor_df = azure_blob_service.get_soe_data("debtor4", integration_id=integration_id)
         except Exception:
             debtor_df = pd.DataFrame()
-
-        # Filter by integration_id
-        if not dim_df.empty and "integration_id" in dim_df.columns and integration_id:
-            dim_df = dim_df[dim_df["integration_id"].astype(str) == str(integration_id)]
-
-        if not debtor_df.empty and "integration_id" in debtor_df.columns and integration_id:
-            debtor_df = debtor_df[debtor_df["integration_id"].astype(str) == str(integration_id)]
 
         # Index debtor data by RecordNum for quick lookup
         debtor_lookup = {}
@@ -367,19 +383,15 @@ class PMSSyncService:
         """Sync appointments from vw_Appointments"""
         stats = {"records_processed": 0, "records_created": 0, "records_updated": 0, "records_skipped": 0, "records_failed": 0}
         now = datetime.now(timezone.utc)
-        integration_id = connection.external_practice_id
+        integration_id = await self._resolve_soe_integration_id(db, connection)
 
         try:
-            df = azure_blob_service.get_soe_data("vw_Appointments")
+            df = azure_blob_service.get_soe_data("vw_Appointments", integration_id=integration_id)
         except Exception:
             return stats
 
         if df.empty:
             return stats
-
-        # Filter by integration_id
-        if "integration_id" in df.columns and integration_id:
-            df = df[df["integration_id"].astype(str) == str(integration_id)]
 
         batch = []
         for _, row in df.iterrows():
@@ -457,20 +469,18 @@ class PMSSyncService:
         """Sync providers from vw_providertimes_final"""
         stats = {"records_processed": 0, "records_created": 0, "records_updated": 0, "records_skipped": 0, "records_failed": 0}
         now = datetime.now(timezone.utc)
-        integration_id = connection.external_practice_id
+        integration_id = await self._resolve_soe_integration_id(db, connection)
 
         try:
-            df = azure_blob_service.get_soe_data("vw_providertimes_final")
+            df = azure_blob_service.get_soe_data("vw_providertimes_final", integration_id=integration_id)
         except Exception:
             return stats
 
         if df.empty:
             return stats
 
-        # Filter by integration_id (may be in SiteId column)
-        if "integration_id" in df.columns and integration_id:
-            df = df[df["integration_id"].astype(str) == str(integration_id)]
-        elif "SiteId" in df.columns and integration_id:
+        # Additional filter by SiteId if integration_id column wasn't present
+        if "SiteId" in df.columns and integration_id and "integration_id" not in df.columns:
             df = df[df["SiteId"].astype(str) == str(integration_id)]
 
         batch = []
