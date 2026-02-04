@@ -3,7 +3,10 @@ import { API_ENDPOINTS } from '../config/constants';
 
 export interface Client {
   id?: string;
+  tenant_id?: string;  // 8-char alphanumeric tenant ID
   legal_client_trading_name: string;
+  legal_trading_name?: string;  // Alias for legal_client_trading_name
+  name?: string;  // Alias for display name
   workfin_legal_entity_reference: string;
   status?: string;
   created_at?: string;

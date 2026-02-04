@@ -14,7 +14,7 @@ interface Practice {
 }
 
 interface PMSIntegrationSectionProps {
-  clientId?: string;
+  clientId?: string;  // UUID of the client (will fetch tenant_id from this)
   onConnectionsChange?: (connections: PMSConnectionCreate[]) => void;
 }
 
@@ -22,6 +22,8 @@ const PMSIntegrationSection: React.FC<PMSIntegrationSectionProps> = ({
   clientId,
   onConnectionsChange,
 }) => {
+  const [tenantId, setTenantId] = useState<string | undefined>();  // 8-char alphanumeric tenant ID
+  const [tenantName, setTenantName] = useState<string | undefined>();  // Client name
   const [practices, setPractices] = useState<Practice[]>([]);
   const [connectionsByPractice, setConnectionsByPractice] = useState<Record<string, PMSConnection[]>>({});
   const [unassignedConnections, setUnassignedConnections] = useState<PMSConnection[]>([]);
@@ -30,7 +32,7 @@ const PMSIntegrationSection: React.FC<PMSIntegrationSectionProps> = ({
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedPracticeId, setSelectedPracticeId] = useState<string | undefined>();
   const [selectedPMSType, setSelectedPMSType] = useState<
-    'SOE' | 'DENTALLY' | 'SFD' | 'CARESTACK' | undefined
+    'SOE' | 'DENTALLY' | 'SFD' | 'CARESTACK' | 'XERO' | 'COMPASS' | undefined
   >();
 
   useEffect(() => {
@@ -49,8 +51,15 @@ const PMSIntegrationSection: React.FC<PMSIntegrationSectionProps> = ({
     if (!clientId) return;
     setLoading(true);
     try {
-      // Fetch client details to get practices
+      // Fetch client details to get practices and tenant_id
       const clientData = await clientService.getClient(clientId) as any;
+
+      // Extract tenant_id and tenant_name from client data
+      const fetchedTenantId = clientData.tenant_id;
+      const fetchedTenantName = clientData.legal_trading_name || clientData.name;
+      setTenantId(fetchedTenantId);
+      setTenantName(fetchedTenantName);
+
       const clientPractices = (clientData.practices || []).map((p: any) => ({
         id: p.id || p.practice_id,
         name: p.name,
@@ -59,9 +68,9 @@ const PMSIntegrationSection: React.FC<PMSIntegrationSectionProps> = ({
       }));
       setPractices(clientPractices);
 
-      // Fetch all connections for this client
+      // Fetch all connections for this tenant (using tenant_id instead of client_id)
       const response = await pmsService.listConnections({
-        client_id: clientId,
+        tenant_id: fetchedTenantId,
         page: 1,
         page_size: 100,
       });
@@ -227,7 +236,8 @@ const PMSIntegrationSection: React.FC<PMSIntegrationSectionProps> = ({
           }}
           onSuccess={handleConnectionCreated}
           pmsType={selectedPMSType}
-          clientId={clientId}
+          tenantId={tenantId}
+          tenantName={tenantName}
           practiceId={selectedPracticeId}
         />
       </div>
@@ -289,7 +299,8 @@ const PMSIntegrationSection: React.FC<PMSIntegrationSectionProps> = ({
         }}
         onSuccess={handleConnectionCreated}
         pmsType={selectedPMSType}
-        clientId={clientId}
+        tenantId={tenantId}
+        tenantName={tenantName}
         practiceId={selectedPracticeId}
       />
     </div>

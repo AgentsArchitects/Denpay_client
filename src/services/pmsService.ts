@@ -7,10 +7,11 @@ import { API_ENDPOINTS } from '../config/constants';
 
 export interface PMSConnection {
   id: string;
-  client_id: string;
+  tenant_id: string;  // 8-char alphanumeric tenant ID
+  tenant_name?: string;
   practice_id?: string;
-  pms_type: 'SOE' | 'DENTALLY' | 'SFD' | 'CARESTACK';
-  integration_id: string;
+  pms_type: 'SOE' | 'DENTALLY' | 'SFD' | 'CARESTACK' | 'XERO' | 'COMPASS';
+  integration_id: string;  // 8-char alphanumeric integration ID
   integration_name: string;
   external_practice_id?: string;
   external_site_code?: string;
@@ -32,9 +33,11 @@ export interface PMSConnection {
 }
 
 export interface PMSConnectionCreate {
-  client_id?: string;
+  tenant_id: string;  // 8-char alphanumeric tenant ID (REQUIRED)
+  tenant_name?: string;
   practice_id?: string;
-  pms_type: 'SOE' | 'DENTALLY' | 'SFD' | 'CARESTACK';
+  pms_type: 'SOE' | 'DENTALLY' | 'SFD' | 'CARESTACK' | 'XERO' | 'COMPASS';
+  integration_id: string;  // 8-char alphanumeric integration ID (REQUIRED)
   integration_name: string;
   external_practice_id?: string;
   external_site_code?: string;
@@ -173,7 +176,7 @@ export interface SyncResponse {
 class PMSService {
   // Connection CRUD
   async listConnections(params?: {
-    client_id?: string;
+    tenant_id?: string;  // Changed from client_id to tenant_id
     practice_id?: string;
     pms_type?: string;
     integration_id?: string;

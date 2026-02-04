@@ -26,6 +26,9 @@ const PMSConnectionCreatePage: React.FC = () => {
       }
 
       const data: PMSConnectionCreate = {
+        tenant_id: values.tenant_id,  // Required 8-char alphanumeric
+        tenant_name: values.tenant_name,  // Optional
+        integration_id: values.integration_id,  // Required 8-char alphanumeric
         pms_type: values.pms_type,
         integration_name: values.integration_name || values.pms_type,
         sync_config: Object.keys(syncConfig).length > 0 ? syncConfig : undefined,

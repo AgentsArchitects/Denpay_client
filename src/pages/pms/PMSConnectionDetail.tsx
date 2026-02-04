@@ -278,8 +278,11 @@ const PMSConnectionDetail: React.FC = () => {
                 <Descriptions.Item label="External Practice ID">
                   {connection.external_practice_id || '-'}
                 </Descriptions.Item>
-                <Descriptions.Item label="Client ID">
-                  {connection.client_id}
+                <Descriptions.Item label="Tenant ID">
+                  {connection.tenant_id}
+                </Descriptions.Item>
+                <Descriptions.Item label="Tenant Name">
+                  {connection.tenant_name || '-'}
                 </Descriptions.Item>
                 <Descriptions.Item label="Practice ID">
                   {connection.practice_id || '-'}

@@ -254,9 +254,11 @@ const ClientOnboardingCreate: React.FC = () => {
         message.loading({ content: 'Creating client...', key: 'submit', duration: 0 });
         const response = await clientService.createClient(payload);
         const newClientId = response?.id;
+        const newTenantId = response?.tenant_id;  // Get tenant_id from response
+        const newTenantName = response?.legal_trading_name || response?.name;
 
         // Save pending PMS connections if any
-        if (newClientId && pendingPMSConnections.length > 0) {
+        if (newClientId && newTenantId && pendingPMSConnections.length > 0) {
           message.loading({
             content: `Creating ${pendingPMSConnections.length} PMS connection(s)...`,
             key: 'submit',
@@ -270,7 +272,8 @@ const ClientOnboardingCreate: React.FC = () => {
             try {
               await pmsService.createConnection({
                 ...connData,
-                client_id: newClientId
+                tenant_id: newTenantId,  // Use tenant_id instead of client_id
+                tenant_name: newTenantName,
               });
               successCount++;
             } catch (error: any) {
