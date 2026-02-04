@@ -1,9 +1,8 @@
 """
 SOE Data API Endpoints
 """
-from typing import List, Optional
+from typing import Optional
 import math
-import uuid
 from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text

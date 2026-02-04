@@ -3,7 +3,6 @@ PMS Integration API Endpoints
 Connection CRUD, sync triggers, and sync history
 """
 import uuid as uuid_mod
-import asyncio
 from typing import Optional
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
