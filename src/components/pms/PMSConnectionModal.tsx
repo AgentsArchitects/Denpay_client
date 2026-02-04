@@ -25,17 +25,28 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [selectedPMSType, setSelectedPMSType] = useState<string>(pmsType || 'SOE');
+  const [existingIntegrationNames, setExistingIntegrationNames] = useState<string[]>([]);
 
   useEffect(() => {
-    if (visible) {
+    if (visible && tenantId) {
       form.resetFields();
       const effectiveType = pmsType || 'SOE';
       setSelectedPMSType(effectiveType);
       if (pmsType) {
         form.setFieldsValue({ pms_type: pmsType });
       }
+
+      // Fetch existing integration names for this tenant to prevent duplicates
+      pmsService.listConnections({ tenant_id: tenantId, page: 1, page_size: 100 })
+        .then(response => {
+          const names = response.data.map((conn: any) => conn.integration_name.toLowerCase());
+          setExistingIntegrationNames(names);
+        })
+        .catch(err => {
+          console.error('Failed to fetch existing integrations:', err);
+        });
     }
-  }, [visible, pmsType, form]);
+  }, [visible, tenantId, pmsType, form]);
 
   const handleSubmit = async () => {
     try {
@@ -60,6 +71,14 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
       // Validate required fields based on backend schema
       if (!tenantId) {
         message.error('Tenant ID is required');
+        return;
+      }
+
+      // Check for duplicate integration name within this tenant
+      const integrationName = values.integration_name || effectiveType;
+      if (existingIntegrationNames.includes(integrationName.toLowerCase())) {
+        message.error(`Integration name "${integrationName}" already exists for this client. Please use a different name.`);
+        setLoading(false);
         return;
       }
 
