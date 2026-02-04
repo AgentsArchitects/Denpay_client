@@ -128,7 +128,7 @@ async def create_connection(
         sync_providers=data.sync_providers,
         sync_treatments=data.sync_treatments,
         sync_billing=data.sync_billing,
-        connection_status="active",
+        connection_status="CONNECTED",
     )
     db.add(connection)
     await db.commit()

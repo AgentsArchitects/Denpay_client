@@ -38,7 +38,7 @@ class PMSConnection(Base):
     sync_providers = Column(Boolean, nullable=True, default=True)
     sync_treatments = Column(Boolean, nullable=True, default=True)
     sync_billing = Column(Boolean, nullable=True, default=False)
-    connection_status = Column(String, nullable=True, default="active")
+    connection_status = Column(String, nullable=True, default="CONNECTED")
     last_sync_at = Column(DateTime(timezone=True), nullable=True)
     last_sync_status = Column(String, nullable=True)
     last_sync_error = Column(Text, nullable=True)
