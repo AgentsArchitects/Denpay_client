@@ -17,17 +17,19 @@ class PMSType(str, Enum):
 
 
 class ConnectionStatus(str, Enum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    ERROR = "error"
-    SYNCING = "syncing"
+    PENDING = "PENDING"
+    TESTING = "TESTING"
+    CONNECTED = "CONNECTED"
+    ERROR = "ERROR"
+    DISABLED = "DISABLED"
 
 
 class SyncStatus(str, Enum):
-    SUCCESS = "success"
-    FAILED = "failed"
-    IN_PROGRESS = "in_progress"
-    PARTIAL = "partial"
+    QUEUED = "QUEUED"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
 
 
 # ==================

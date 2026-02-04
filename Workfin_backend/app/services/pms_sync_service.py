@@ -153,9 +153,9 @@ class PMSSyncService:
         sync_record = SyncHistory(
             id=uuid.uuid4(),
             connection_id=connection.id,
-            sync_type=entity_type,
-            sync_scope="full",
-            status="in_progress",
+            sync_type="MANUAL" if triggered_by == "manual" else "SCHEDULED",
+            sync_scope=entity_type,
+            status="RUNNING",
             started_at=now,
             triggered_by=triggered_by
         )
@@ -186,7 +186,7 @@ class PMSSyncService:
 
             # Update sync history
             completed_at = datetime.now(timezone.utc)
-            sync_record.status = "success"
+            sync_record.status = "COMPLETED"
             sync_record.records_processed = stats["records_processed"]
             sync_record.records_created = stats["records_created"]
             sync_record.records_updated = stats["records_updated"]
@@ -197,7 +197,7 @@ class PMSSyncService:
 
             # Update connection status
             connection.last_sync_at = completed_at
-            connection.last_sync_status = "success"
+            connection.last_sync_status = "COMPLETED"
             connection.last_sync_error = None
             connection.last_sync_records_count = stats["records_processed"]
 
@@ -211,14 +211,14 @@ class PMSSyncService:
 
         except Exception as e:
             completed_at = datetime.now(timezone.utc)
-            sync_record.status = "failed"
+            sync_record.status = "FAILED"
             sync_record.error_message = str(e)
             sync_record.completed_at = completed_at
             sync_record.duration_seconds = int((completed_at - now).total_seconds())
             sync_record.records_processed = stats["records_processed"]
 
             connection.last_sync_at = completed_at
-            connection.last_sync_status = "failed"
+            connection.last_sync_status = "FAILED"
             connection.last_sync_error = str(e)
 
             await db.commit()
