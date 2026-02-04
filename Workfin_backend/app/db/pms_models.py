@@ -23,7 +23,7 @@ class PMSConnection(Base):
     __table_args__ = {"schema": INTEGRATIONS_SCHEMA}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    client_id = Column(UUID(as_uuid=True), nullable=False)
+    client_id = Column(UUID(as_uuid=True), nullable=True)
     practice_id = Column(UUID(as_uuid=True), nullable=True)
     pms_type = Column(String, nullable=False)
     integration_id = Column(String(8), unique=True, nullable=True, default=generate_alphanumeric_id)
