@@ -36,7 +36,7 @@ def to_uuid(value: str) -> uuid_mod.UUID:
 
 @router.get("/connections/", response_model=PaginatedResponse)
 async def list_connections(
-    client_id: Optional[str] = Query(None),
+    tenant_id: Optional[str] = Query(None),
     practice_id: Optional[str] = Query(None),
     pms_type: Optional[str] = Query(None),
     integration_id: Optional[str] = Query(None),
@@ -49,10 +49,9 @@ async def list_connections(
     query = select(PMSConnection)
     count_query = select(func.count(PMSConnection.id))
 
-    if client_id:
-        client_uuid = to_uuid(client_id)
-        query = query.where(PMSConnection.client_id == client_uuid)
-        count_query = count_query.where(PMSConnection.client_id == client_uuid)
+    if tenant_id:
+        query = query.where(PMSConnection.tenant_id == tenant_id)
+        count_query = count_query.where(PMSConnection.tenant_id == tenant_id)
     if practice_id:
         practice_uuid = to_uuid(practice_id)
         query = query.where(PMSConnection.practice_id == practice_uuid)
@@ -110,14 +109,15 @@ async def create_connection(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new PMS connection"""
-    client_uuid = to_uuid(data.client_id) if data.client_id else None
     practice_uuid = to_uuid(data.practice_id) if data.practice_id else None
 
     connection = PMSConnection(
         id=uuid_mod.uuid4(),
-        client_id=client_uuid,
+        tenant_id=data.tenant_id,
+        tenant_name=data.tenant_name,
         practice_id=practice_uuid,
         pms_type=data.pms_type.value,
+        integration_id=data.integration_id,
         integration_name=data.integration_name,
         external_practice_id=data.external_practice_id,
         external_site_code=data.external_site_code,

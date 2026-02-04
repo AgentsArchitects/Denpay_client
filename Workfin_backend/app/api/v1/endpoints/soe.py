@@ -113,13 +113,13 @@ async def sync_integrations_to_postgres(db: AsyncSession = Depends(get_db)):
         if not integrations:
             return {"status": "warning", "message": "No integrations found in Gold Layer", "synced": 0}
 
-        # Upsert into PostgreSQL
+        # Upsert into PostgreSQL using integration_id as PK
         created = 0
         updated = 0
         for item in integrations:
             # Check if exists
             result = await db.execute(
-                text('SELECT id FROM soe.soe_integrations WHERE integration_id = :iid'),
+                text('SELECT integration_id FROM soe.soe_integrations WHERE integration_id = :iid'),
                 {"iid": item["integration_id"]}
             )
             existing = result.fetchone()
@@ -134,10 +134,9 @@ async def sync_integrations_to_postgres(db: AsyncSession = Depends(get_db)):
                 updated += 1
             else:
                 await db.execute(
-                    text('''INSERT INTO soe.soe_integrations (id, integration_id, integration_name, source_table, last_synced_at)
-                            VALUES (:id, :iid, :iname, :src, NOW())'''),
+                    text('''INSERT INTO soe.soe_integrations (integration_id, integration_name, source_table, last_synced_at)
+                            VALUES (:iid, :iname, :src, NOW())'''),
                     {
-                        "id": str(uuid.uuid4()),
                         "iid": item["integration_id"],
                         "iname": item["integration_name"],
                         "src": "all_tables"

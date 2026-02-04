@@ -19,18 +19,21 @@ SOE_SCHEMA = "soe"
 # =====================
 
 class PMSConnection(Base):
+    """Unified PMS connections table for all integration types (SOE, SFD, Dentally, CareStack, Xero).
+    The integration_id references soe.soe_integrations.integration_id for SOE integrations."""
     __tablename__ = "pms_connections"
     __table_args__ = {"schema": INTEGRATIONS_SCHEMA}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    client_id = Column(UUID(as_uuid=True), nullable=True)
+    tenant_id = Column(String(8), nullable=False)  # 8-char alphanumeric tenant ID
+    tenant_name = Column(String, nullable=True)
     practice_id = Column(UUID(as_uuid=True), nullable=True)
-    pms_type = Column(String, nullable=False)
-    integration_id = Column(String(8), unique=True, nullable=True, default=generate_alphanumeric_id)
+    pms_type = Column(String, nullable=False)  # SOE, SFD, DENTALLY, CARESTACK, XERO
+    integration_id = Column(String(8), nullable=False)  # 8-char alphanumeric, references soe.soe_integrations for SOE
     integration_name = Column(String, nullable=False)
     external_practice_id = Column(String, nullable=True)
     external_site_code = Column(String, nullable=True)
-    data_source = Column(String, nullable=True)
+    data_source = Column(String, nullable=True)  # GOLD_LAYER, DIRECT_API, FILE_UPLOAD
     sync_frequency = Column(String, nullable=True)
     sync_config = Column(JSONB, nullable=True)
     sync_patients = Column(Boolean, nullable=True, default=True)
@@ -92,15 +95,16 @@ class FieldMapping(Base):
 # =====================
 
 class SOEIntegration(Base):
-    """Stores distinct integration_id + IntegrationName pairs from Gold Layer.
-    Synced from Azure Blob parquet data to avoid slow blob reads on every dropdown load."""
+    """Stores SOE integration metadata from Gold Layer parquet data.
+    integration_id is the 8-char alphanumeric ID found in the parquet files (e.g., '33F91ECD')."""
     __tablename__ = "soe_integrations"
     __table_args__ = {"schema": SOE_SCHEMA}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    integration_id = Column(String, nullable=False, unique=True)
+    integration_id = Column(String(8), primary_key=True)  # 8-char alphanumeric from parquet
     integration_name = Column(String, nullable=False)
-    source_table = Column(String, nullable=True, default="vw_DimPatients")
+    source_table = Column(String, nullable=True)
+    tenant_id = Column(String(8), nullable=True)  # 8-char alphanumeric tenant ID
+    tenant_name = Column(String, nullable=True)
     last_synced_at = Column(DateTime(timezone=True), nullable=True, server_default=func.now())
 
 

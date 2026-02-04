@@ -14,6 +14,8 @@ class PMSType(str, Enum):
     DENTALLY = "DENTALLY"
     SFD = "SFD"
     CARESTACK = "CARESTACK"
+    XERO = "XERO"
+    COMPASS = "COMPASS"
 
 
 class ConnectionStatus(str, Enum):
@@ -37,9 +39,11 @@ class SyncStatus(str, Enum):
 # ==================
 
 class PMSConnectionCreate(BaseModel):
-    client_id: Optional[str] = None
+    tenant_id: str  # 8-char alphanumeric tenant ID
+    tenant_name: Optional[str] = None
     practice_id: Optional[str] = None
     pms_type: PMSType
+    integration_id: str  # 8-char alphanumeric integration ID (from soe_integrations for SOE)
     integration_name: str
     external_practice_id: Optional[str] = None
     external_site_code: Optional[str] = None
@@ -70,10 +74,11 @@ class PMSConnectionUpdate(BaseModel):
 
 class PMSConnectionResponse(BaseModel):
     id: str
-    client_id: Optional[str] = None
+    tenant_id: str  # 8-char alphanumeric
+    tenant_name: Optional[str] = None
     practice_id: Optional[str] = None
     pms_type: str
-    integration_id: Optional[str] = None
+    integration_id: str  # 8-char alphanumeric
     integration_name: str
     external_practice_id: Optional[str] = None
     external_site_code: Optional[str] = None
@@ -93,7 +98,7 @@ class PMSConnectionResponse(BaseModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
-    @field_validator('id', 'client_id', 'practice_id', mode='before')
+    @field_validator('id', 'practice_id', mode='before')
     @classmethod
     def uuid_to_str(cls, v: Any) -> Optional[str]:
         if v is None:
