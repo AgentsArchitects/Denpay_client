@@ -104,7 +104,10 @@ async def get_soe_integrations(db: AsyncSession = Depends(get_db)):
 @router.post("/sync/integrations")
 async def sync_integrations_to_postgres(db: AsyncSession = Depends(get_db)):
     """Sync distinct integration_id + IntegrationName from Gold Layer parquet to PostgreSQL.
-    This populates the soe.soe_integrations table for fast dropdown lookups."""
+    This populates the soe.soe_integrations table for fast dropdown lookups.
+
+    IMPORTANT: Ensures unique integration_name - if multiple integration_ids exist for the same name,
+    only the first one is kept."""
     try:
         # Read from Azure Blob Gold Layer
         integrations = azure_blob_service.get_soe_distinct_integrations()
@@ -112,11 +115,30 @@ async def sync_integrations_to_postgres(db: AsyncSession = Depends(get_db)):
         if not integrations:
             return {"status": "warning", "message": "No integrations found in Gold Layer", "synced": 0}
 
+        # Deduplicate by integration_name - keep only first integration_id per name
+        unique_integrations = {}
+        duplicates_found = []
+
+        for item in integrations:
+            name = item["integration_name"]
+            if name not in unique_integrations:
+                unique_integrations[name] = item
+            else:
+                # Track duplicates for logging
+                duplicates_found.append({
+                    "name": name,
+                    "kept_id": unique_integrations[name]["integration_id"],
+                    "skipped_id": item["integration_id"]
+                })
+
+        # Use deduplicated list
+        deduplicated = list(unique_integrations.values())
+
         # Upsert into PostgreSQL using integration_id as PK
         created = 0
         updated = 0
-        for item in integrations:
-            # Check if exists
+        for item in deduplicated:
+            # Check if exists by integration_id
             result = await db.execute(
                 text('SELECT integration_id FROM soe.soe_integrations WHERE integration_id = :iid'),
                 {"iid": item["integration_id"]}
@@ -134,7 +156,11 @@ async def sync_integrations_to_postgres(db: AsyncSession = Depends(get_db)):
             else:
                 await db.execute(
                     text('''INSERT INTO soe.soe_integrations (integration_id, integration_name, source_table, last_synced_at)
-                            VALUES (:iid, :iname, :src, NOW())'''),
+                            VALUES (:iid, :iname, :src, NOW())
+                            ON CONFLICT (integration_id) DO UPDATE
+                            SET integration_name = EXCLUDED.integration_name,
+                                source_table = EXCLUDED.source_table,
+                                last_synced_at = NOW()'''),
                     {
                         "iid": item["integration_id"],
                         "iname": item["integration_name"],
@@ -147,10 +173,12 @@ async def sync_integrations_to_postgres(db: AsyncSession = Depends(get_db)):
 
         return {
             "status": "success",
-            "message": f"Synced {len(integrations)} integrations to PostgreSQL",
+            "message": f"Synced {len(deduplicated)} unique integrations to PostgreSQL",
             "created": created,
             "updated": updated,
-            "total": len(integrations)
+            "total": len(deduplicated),
+            "duplicates_skipped": len(duplicates_found),
+            "duplicates": duplicates_found if duplicates_found else None
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to sync integrations: {str(e)}")
