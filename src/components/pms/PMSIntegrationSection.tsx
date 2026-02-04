@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Empty, Space, Spin, message, Tag, Collapse } from 'antd';
-import { PlusOutlined, ReloadOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { Card, Button, Empty, Space, Spin, message, Tag } from 'antd';
+import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import pmsService, { PMSConnection, PMSConnectionCreate } from '../../services/pmsService';
 import clientService from '../../services/clientService';
 import PMSConnectionModal from './PMSConnectionModal';
@@ -161,7 +161,6 @@ const PMSIntegrationSection: React.FC<PMSIntegrationSectionProps> = ({
       }
     >
       <Space direction="vertical" size="small">
-        <div>External Practice ID: {conn.external_practice_id || '-'}</div>
         <div>
           Sync: {[
             conn.sync_patients && 'Patients',
@@ -173,53 +172,6 @@ const PMSIntegrationSection: React.FC<PMSIntegrationSectionProps> = ({
       </Space>
     </Card>
   );
-
-  const renderPracticeSection = (practice: Practice) => {
-    const practiceConnections = connectionsByPractice[practice.id] || [];
-    const practicePendingConnections = pendingConnections.filter(
-      c => c.practice_id === practice.id
-    );
-
-    return (
-      <Card
-        key={practice.id}
-        title={
-          <Space>
-            <EnvironmentOutlined />
-            <span style={{ fontWeight: 600 }}>{practice.name}</span>
-            <Tag>{practice.location_id}</Tag>
-            <Tag color={practice.status === 'Active' ? 'green' : 'default'}>
-              {practice.status}
-            </Tag>
-          </Space>
-        }
-        size="small"
-        style={{ marginBottom: 16 }}
-        extra={
-          <Button
-            type="link"
-            size="small"
-            icon={<PlusOutlined />}
-            onClick={() => handleAddConnection(practice.id)}
-          >
-            Add Integration
-          </Button>
-        }
-      >
-        {practiceConnections.length > 0 || practicePendingConnections.length > 0 ? (
-          <Space direction="vertical" style={{ width: '100%' }} size="small">
-            {practiceConnections.map(renderConnectionCard)}
-            {practicePendingConnections.map((conn, index) => renderPendingCard(conn, index))}
-          </Space>
-        ) : (
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description="No integrations for this location"
-          />
-        )}
-      </Card>
-    );
-  };
 
   // If no client yet (create mode), show the simple flat PMS type sections
   if (!clientId) {
@@ -282,11 +234,16 @@ const PMSIntegrationSection: React.FC<PMSIntegrationSectionProps> = ({
     );
   }
 
-  // Edit mode - show location-based hierarchy
+  // Edit mode - show flat list of integrations
+  const allConnections = [
+    ...Object.values(connectionsByPractice).flat(),
+    ...unassignedConnections,
+  ];
+
   return (
     <div>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3>Integrations by Location</h3>
+        <h3>PMS Integrations</h3>
         <Space>
           <Button
             icon={<ReloadOutlined />}
@@ -311,48 +268,11 @@ const PMSIntegrationSection: React.FC<PMSIntegrationSectionProps> = ({
         </div>
       ) : (
         <>
-          {/* Render practices/locations with their integrations */}
-          {practices.length > 0 ? (
-            practices.map(renderPracticeSection)
+          {allConnections.length > 0 ? (
+            <Space direction="vertical" style={{ width: '100%' }} size="small">
+              {allConnections.map(renderConnectionCard)}
+            </Space>
           ) : (
-            <Card size="small" style={{ marginBottom: 16 }}>
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description="No locations (practices) found for this client. Add practices in the Client Information tab first."
-              />
-            </Card>
-          )}
-
-          {/* Unassigned connections (not linked to any practice) */}
-          {unassignedConnections.length > 0 && (
-            <Card
-              title={
-                <Space>
-                  <span style={{ fontWeight: 600 }}>Unassigned Integrations</span>
-                  <Tag color="orange">No Location</Tag>
-                </Space>
-              }
-              size="small"
-              style={{ marginBottom: 16 }}
-              extra={
-                <Button
-                  type="link"
-                  size="small"
-                  icon={<PlusOutlined />}
-                  onClick={() => handleAddConnection()}
-                >
-                  Add Integration
-                </Button>
-              }
-            >
-              <Space direction="vertical" style={{ width: '100%' }} size="small">
-                {unassignedConnections.map(renderConnectionCard)}
-              </Space>
-            </Card>
-          )}
-
-          {/* Show flat view if no practices but there are unassigned connections */}
-          {practices.length === 0 && unassignedConnections.length === 0 && (
             <Empty
               description="No integrations configured yet. Click 'Add Integration' to get started."
             />

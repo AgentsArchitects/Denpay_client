@@ -128,9 +128,6 @@ const PMSConnectionCard: React.FC<PMSConnectionCardProps> = ({
         <Descriptions.Item label="PMS Type">
           <Tag color="blue">{connection.pms_type}</Tag>
         </Descriptions.Item>
-        <Descriptions.Item label="External Practice ID">
-          {connection.external_practice_id || '-'}
-        </Descriptions.Item>
         <Descriptions.Item label="Sync Entities">
           {getSyncEntities().map((entity) => (
             <Tag key={entity} style={{ marginRight: 4 }}>
