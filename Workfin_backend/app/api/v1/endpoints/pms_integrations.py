@@ -3,13 +3,14 @@ PMS Integration API Endpoints
 Connection CRUD, sync triggers, and sync history
 """
 import uuid as uuid_mod
+import asyncio
 from typing import Optional
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
-from app.db.database import get_db
+from app.db.database import get_db, AsyncSessionLocal
 from app.db.pms_models import PMSConnection, SyncHistory
 from app.schemas.pms import (
     PMSConnectionCreate, PMSConnectionUpdate, PMSConnectionResponse,
@@ -213,13 +214,29 @@ async def test_connection(
         }
 
 
+async def _run_sync_in_background(connection_id: uuid_mod.UUID, triggered_by: str):
+    """Run sync in background with its own DB session"""
+    async with AsyncSessionLocal() as db:
+        try:
+            result = await db.execute(
+                select(PMSConnection).where(PMSConnection.id == connection_id)
+            )
+            connection = result.scalar_one_or_none()
+            if not connection:
+                return
+            await pms_sync_service.sync_all(db, connection, triggered_by)
+        except Exception as e:
+            print(f"Background sync failed for {connection_id}: {e}")
+
+
 @router.post("/connections/{connection_id}/sync", response_model=dict)
 async def sync_connection(
     connection_id: str,
     triggered_by: str = Query("manual"),
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
 ):
-    """Trigger a full sync for all enabled entities"""
+    """Trigger a full sync for all enabled entities (runs in background)"""
     conn_uuid = to_uuid(connection_id)
     result = await db.execute(
         select(PMSConnection).where(PMSConnection.id == conn_uuid)
@@ -228,24 +245,43 @@ async def sync_connection(
     if not connection:
         raise HTTPException(status_code=404, detail="Connection not found")
 
-    if connection.connection_status == "inactive":
-        raise HTTPException(status_code=400, detail="Connection is inactive")
+    if connection.connection_status == "DISABLED":
+        raise HTTPException(status_code=400, detail="Connection is disabled")
 
-    try:
-        results = await pms_sync_service.sync_all(db, connection, triggered_by)
-        return {"status": "success", "results": results}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
+    # Run sync in background to avoid Azure gateway timeout
+    background_tasks.add_task(_run_sync_in_background, conn_uuid, triggered_by)
+
+    return {
+        "status": "accepted",
+        "message": "Sync started in background. Check sync history for progress.",
+        "connection_id": connection_id
+    }
 
 
-@router.post("/connections/{connection_id}/sync/{entity_type}", response_model=PMSSyncResponse)
+async def _run_entity_sync_in_background(connection_id: uuid_mod.UUID, entity_type: str, triggered_by: str):
+    """Run single entity sync in background with its own DB session"""
+    async with AsyncSessionLocal() as db:
+        try:
+            result = await db.execute(
+                select(PMSConnection).where(PMSConnection.id == connection_id)
+            )
+            connection = result.scalar_one_or_none()
+            if not connection:
+                return
+            await pms_sync_service.sync_entity(db, connection, entity_type, triggered_by)
+        except Exception as e:
+            print(f"Background entity sync failed for {connection_id}/{entity_type}: {e}")
+
+
+@router.post("/connections/{connection_id}/sync/{entity_type}", response_model=dict)
 async def sync_entity(
     connection_id: str,
     entity_type: str,
     triggered_by: str = Query("manual"),
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
 ):
-    """Trigger sync for a specific entity type"""
+    """Trigger sync for a specific entity type (runs in background)"""
     valid_entities = ["patients", "appointments", "providers"]
     if entity_type not in valid_entities:
         raise HTTPException(
@@ -261,24 +297,18 @@ async def sync_entity(
     if not connection:
         raise HTTPException(status_code=404, detail="Connection not found")
 
-    if connection.connection_status == "inactive":
-        raise HTTPException(status_code=400, detail="Connection is inactive")
+    if connection.connection_status == "DISABLED":
+        raise HTTPException(status_code=400, detail="Connection is disabled")
 
-    try:
-        sync_result = await pms_sync_service.sync_entity(db, connection, entity_type, triggered_by)
-        return PMSSyncResponse(
-            connection_id=str(connection.id),
-            sync_type=entity_type,
-            status=SyncStatus.SUCCESS if sync_result["status"] == "success" else SyncStatus.FAILED,
-            records_processed=sync_result.get("records_processed", 0),
-            records_created=sync_result.get("records_created", 0),
-            records_updated=sync_result.get("records_updated", 0),
-            records_skipped=sync_result.get("records_skipped", 0),
-            records_failed=sync_result.get("records_failed", 0),
-            duration_seconds=sync_result.get("duration_seconds"),
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
+    # Run sync in background to avoid Azure gateway timeout
+    background_tasks.add_task(_run_entity_sync_in_background, conn_uuid, entity_type, triggered_by)
+
+    return {
+        "status": "accepted",
+        "message": f"Sync for {entity_type} started in background. Check sync history for progress.",
+        "connection_id": connection_id,
+        "entity_type": entity_type
+    }
 
 
 # ==================

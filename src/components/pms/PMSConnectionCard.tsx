@@ -29,7 +29,7 @@ const PMSConnectionCard: React.FC<PMSConnectionCardProps> = ({
     try {
       message.loading({ content: 'Starting sync...', key: 'sync' });
       await pmsService.syncConnection(connection.id);
-      message.success({ content: 'Sync completed successfully', key: 'sync' });
+      message.success({ content: 'Sync started. Check sync history for progress.', key: 'sync' });
       if (onSync) onSync(connection);
       if (onRefresh) onRefresh();
     } catch (error: any) {
