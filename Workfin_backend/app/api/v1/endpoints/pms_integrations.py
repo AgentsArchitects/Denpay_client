@@ -232,8 +232,8 @@ async def _run_sync_in_background(connection_id: uuid_mod.UUID, triggered_by: st
 @router.post("/connections/{connection_id}/sync", response_model=dict)
 async def sync_connection(
     connection_id: str,
-    triggered_by: str = Query("manual"),
     background_tasks: BackgroundTasks,
+    triggered_by: str = Query("manual"),
     db: AsyncSession = Depends(get_db)
 ):
     """Trigger a full sync for all enabled entities (runs in background)"""
@@ -277,8 +277,8 @@ async def _run_entity_sync_in_background(connection_id: uuid_mod.UUID, entity_ty
 async def sync_entity(
     connection_id: str,
     entity_type: str,
-    triggered_by: str = Query("manual"),
     background_tasks: BackgroundTasks,
+    triggered_by: str = Query("manual"),
     db: AsyncSession = Depends(get_db)
 ):
     """Trigger sync for a specific entity type (runs in background)"""
