@@ -25,7 +25,6 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [selectedPMSType, setSelectedPMSType] = useState<string>(pmsType || 'SOE');
-  const [soeIntegrations, setSOEIntegrations] = useState<Array<{ integration_id: string; integration_name: string }>>([]);
 
   useEffect(() => {
     if (visible) {
@@ -34,18 +33,6 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
       setSelectedPMSType(effectiveType);
       if (pmsType) {
         form.setFieldsValue({ pms_type: pmsType });
-      }
-
-      // Fetch SOE integrations for the dropdown
-      if (effectiveType === 'SOE') {
-        pmsService.getSOEIntegrations()
-          .then(response => {
-            setSOEIntegrations(response.integrations || []);
-          })
-          .catch(err => {
-            console.error('Failed to fetch SOE integrations:', err);
-            message.warning('Failed to load SOE integrations. You may need to sync them first.');
-          });
       }
     }
   }, [visible, pmsType, form]);
@@ -76,16 +63,14 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
         return;
       }
 
-      // For SOE, integration_id comes from the dropdown selection
-      // For other PMS types, we can generate or use a placeholder
-      const integrationId = effectiveType === 'SOE'
-        ? values.soe_integration_id
-        : values.integration_id || `${effectiveType}-${Date.now().toString(36).toUpperCase().substr(-8)}`;
+      // Generate integration_id: 8-char alphanumeric from timestamp + random
+      const generateIntegrationId = () => {
+        const timestamp = Date.now().toString(36).toUpperCase();
+        const random = Math.random().toString(36).substring(2, 4).toUpperCase();
+        return (timestamp + random).slice(-8).padStart(8, '0');
+      };
 
-      if (!integrationId) {
-        message.error('Integration ID is required');
-        return;
-      }
+      const integrationId = generateIntegrationId();
 
       const data: PMSConnectionCreate = {
         tenant_id: tenantId,  // Required 8-char alphanumeric
@@ -95,9 +80,10 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
         integration_id: integrationId,  // Required 8-char alphanumeric
         integration_name: values.integration_name || effectiveType,  // Required
         sync_config: Object.keys(syncConfig).length > 0 ? syncConfig : undefined,
-        sync_patients: true,
-        sync_appointments: true,
-        sync_providers: true,
+        // Sync entities hidden for now - client doesn't need syncing yet
+        sync_patients: false,
+        sync_appointments: false,
+        sync_providers: false,
         sync_treatments: false,
         sync_billing: false,
       };
@@ -157,39 +143,13 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
     switch (effectiveType) {
       case 'SOE':
         return (
-          <>
-            <Form.Item
-              label="SOE Integration"
-              name="soe_integration_id"
-              rules={[{ required: true, message: 'Please select an SOE integration' }]}
-              help="Select from Gold Layer integrations"
-            >
-              <Select
-                placeholder="Select SOE integration"
-                loading={soeIntegrations.length === 0}
-                notFoundContent={soeIntegrations.length === 0 ? 'Loading...' : 'No integrations found'}
-                onChange={(value) => {
-                  const selected = soeIntegrations.find(i => i.integration_id === value);
-                  if (selected) {
-                    form.setFieldsValue({ integration_name: selected.integration_name });
-                  }
-                }}
-              >
-                {soeIntegrations.map(integration => (
-                  <Select.Option key={integration.integration_id} value={integration.integration_id}>
-                    {integration.integration_name} ({integration.integration_id})
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
-            <Form.Item
-              label="Integration Name"
-              name="integration_name"
-              rules={[{ required: true, message: 'Integration name is required' }]}
-            >
-              <Input placeholder="Auto-filled from selection" disabled />
-            </Form.Item>
-          </>
+          <Form.Item
+            label="Integration Name"
+            name="integration_name"
+            rules={[{ required: true, message: 'Please enter integration name' }]}
+          >
+            <Input placeholder="Enter integration name (e.g., Charsfield Practice)" />
+          </Form.Item>
         );
 
       case 'DENTALLY':
