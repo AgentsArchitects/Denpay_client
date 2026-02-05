@@ -14,7 +14,6 @@ import {
   Badge,
 } from 'antd';
 import {
-  PlusOutlined,
   SyncOutlined,
   DeleteOutlined,
   EyeOutlined,
@@ -141,6 +140,13 @@ const PMSConnectionList: React.FC = () => {
       ),
     },
     {
+      title: 'Tenant Name',
+      dataIndex: 'tenant_name',
+      key: 'tenant_name',
+      width: 180,
+      render: (text) => text || '-',
+    },
+    {
       title: 'PMS Type',
       dataIndex: 'pms_type',
       key: 'pms_type',
@@ -239,13 +245,6 @@ const PMSConnectionList: React.FC = () => {
             }}
           >
             <h2>PMS Connections</h2>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => navigate('/pms/connections/create')}
-            >
-              New Connection
-            </Button>
           </div>
 
           <Space style={{ marginBottom: 16 }}>
