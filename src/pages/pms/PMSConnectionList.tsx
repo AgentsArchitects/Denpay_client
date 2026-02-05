@@ -154,12 +154,6 @@ const PMSConnectionList: React.FC = () => {
       render: (type) => <Tag color={getPMSTypeColor(type)}>{type}</Tag>,
     },
     {
-      title: 'External Practice ID',
-      dataIndex: 'external_practice_id',
-      key: 'external_practice_id',
-      width: 180,
-    },
-    {
       title: 'Sync Entities',
       key: 'sync_entities',
       width: 180,

@@ -22,7 +22,8 @@
       "Bash(ls:*)",
       "Bash(git rm:*)",
       "Bash(python:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(gh run list:*)"
     ]
   }
 }

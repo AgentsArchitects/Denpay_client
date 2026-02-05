@@ -100,8 +100,7 @@ const SidebarNav: React.FC<SidebarNavProps> = ({ collapsed }) => {
           label: 'PMS Integrations',
           hasSubmenu: true,
           submenu: [
-            { key: '/pms/connections', label: 'Connections' },
-            { key: '/pms/connections/create', label: 'Create Connection' }
+            { key: '/pms/connections', label: 'Connections' }
           ]
         }
       ]
