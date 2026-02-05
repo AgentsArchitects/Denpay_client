@@ -162,11 +162,11 @@ async def update_connection(
 
 
 @router.delete("/connections/{connection_id}")
-async def deactivate_connection(
+async def delete_connection(
     connection_id: str,
     db: AsyncSession = Depends(get_db)
 ):
-    """Deactivate a PMS connection (soft delete)"""
+    """Delete a PMS connection (hard delete - allows re-adding with same name)"""
     conn_uuid = to_uuid(connection_id)
     result = await db.execute(
         select(PMSConnection).where(PMSConnection.id == conn_uuid)
@@ -175,10 +175,10 @@ async def deactivate_connection(
     if not connection:
         raise HTTPException(status_code=404, detail="Connection not found")
 
-    connection.connection_status = "DISABLED"
-    connection.updated_at = datetime.now(timezone.utc)
+    # Hard delete - remove from database entirely
+    await db.delete(connection)
     await db.commit()
-    return {"message": "Connection deactivated", "id": str(connection.id)}
+    return {"message": "Connection deleted successfully", "id": str(connection.id)}
 
 
 # ==================
