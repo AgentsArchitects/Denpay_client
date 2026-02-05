@@ -53,10 +53,14 @@ const PMSConnectionList: React.FC = () => {
         page: pagination.current,
         page_size: pagination.pageSize,
       });
-      setConnections(response.data);
+      // Filter out DISABLED connections (soft-deleted)
+      const activeConnections = response.data.filter(
+        (conn: PMSConnection) => conn.connection_status !== 'DISABLED'
+      );
+      setConnections(activeConnections);
       setPagination({
         ...pagination,
-        total: response.total,
+        total: activeConnections.length,
       });
     } catch (error: any) {
       message.error(error.message || 'Failed to fetch PMS connections');

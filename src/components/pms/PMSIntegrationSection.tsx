@@ -68,12 +68,18 @@ const PMSIntegrationSection: React.FC<PMSIntegrationSectionProps> = ({
       }));
       setPractices(clientPractices);
 
-      // Fetch all connections for this tenant (using tenant_id instead of client_id)
+      // Fetch all active connections for this tenant (exclude DISABLED)
       const response = await pmsService.listConnections({
         tenant_id: fetchedTenantId,
         page: 1,
         page_size: 100,
       });
+
+      // Filter out DISABLED connections (soft-deleted)
+      const activeConnections = response.data.filter(
+        (conn: PMSConnection) => conn.connection_status !== 'DISABLED'
+      );
+      response.data = activeConnections;
 
       // Group connections by practice_id
       const grouped: Record<string, PMSConnection[]> = {};
