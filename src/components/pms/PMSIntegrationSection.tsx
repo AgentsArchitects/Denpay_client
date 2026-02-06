@@ -14,7 +14,7 @@ interface Practice {
 }
 
 interface PMSIntegrationSectionProps {
-  clientId?: string;  // UUID of the client (will fetch tenant_id from this)
+  clientId?: string;  // 8-char tenant_id of the client
   onConnectionsChange?: (connections: PMSConnectionCreate[]) => void;
 }
 

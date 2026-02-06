@@ -41,8 +41,7 @@ class Client(Base):
     __tablename__ = "clients"
     __table_args__ = {"schema": SCHEMA}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id = Column(String(8), unique=True, nullable=True, default=generate_alphanumeric_id)
+    tenant_id = Column(String(8), primary_key=True, default=generate_alphanumeric_id)
 
     # Basic Information
     legal_trading_name = Column(String(255), nullable=False)
@@ -54,12 +53,12 @@ class Client(Base):
     # Branding & Identity (Tab 1)
     expanded_logo_url = Column(String(500), nullable=True)
     logo_url = Column(String(500), nullable=True)
-    client_type = Column(String(50), nullable=True)  # sole-trader, partnership, ltd-company
+    client_type = Column(String(50), nullable=True)
     company_registration_no = Column(String(50), nullable=True)
     xero_vat_tax_type = Column(String(100), nullable=True)
 
     # License Information (Tab 3)
-    accounting_system = Column(String(50), nullable=True)  # xero, sage
+    accounting_system = Column(String(50), nullable=True)
     xero_app = Column(String(100), nullable=True)
     license_workfin_users = Column(Integer, nullable=True, default=0)
     license_compass_connections = Column(Integer, nullable=True, default=0)
@@ -91,6 +90,11 @@ class Client(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
 
+    # Alias for schema compatibility (ClientResponse expects 'id')
+    @property
+    def id(self):
+        return self.tenant_id
+
     # Relationships
     address = relationship("ClientAddress", back_populates="client", uselist=False, cascade="all, delete-orphan")
     users = relationship("User", back_populates="client", cascade="all, delete-orphan")
@@ -104,12 +108,10 @@ class ClientAddress(Base):
     __tablename__ = "client_addresses"
     __table_args__ = {"schema": SCHEMA}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    client_id = Column(UUID(as_uuid=True), ForeignKey(f'{SCHEMA}.clients.id'), nullable=False, unique=True)
+    tenant_id = Column(String(8), ForeignKey(f'{SCHEMA}.clients.tenant_id'), primary_key=True)
     line1 = Column(String(255), nullable=False)
     line2 = Column(String(255), nullable=True)
     city = Column(String(100), nullable=False)
-    county = Column(String(100), nullable=True)
     postcode = Column(String(20), nullable=False)
     country = Column(String(100), nullable=False, default="United Kingdom")
 
@@ -125,7 +127,7 @@ class User(Base):
     email = Column(String(255), nullable=False, unique=True)
     name = Column(String(255), nullable=False)
     avatar = Column(String(500), nullable=True)
-    client_id = Column(UUID(as_uuid=True), ForeignKey(f'{SCHEMA}.clients.id'), nullable=False)
+    tenant_id = Column(String(8), ForeignKey(f'{SCHEMA}.clients.tenant_id'), nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
 
@@ -155,8 +157,8 @@ class Practice(Base):
     __tablename__ = "practices"
     __table_args__ = {"schema": SCHEMA}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    client_id = Column(UUID(as_uuid=True), ForeignKey(f'{SCHEMA}.clients.id'), nullable=False)
+    practice_id = Column(String(8), primary_key=True, default=generate_alphanumeric_id)
+    tenant_id = Column(String(8), ForeignKey(f'{SCHEMA}.clients.tenant_id'), nullable=False)
     name = Column(String(255), nullable=False)
     location_id = Column(String(100), nullable=False)
     acquisition_date = Column(Date, nullable=False)
@@ -164,6 +166,11 @@ class Practice(Base):
     external_system_id = Column(String(100), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+
+    # Alias for schema compatibility (PracticeResponse expects 'id')
+    @property
+    def id(self):
+        return self.practice_id
 
     # Relationships
     client = relationship("Client", back_populates="practices")
@@ -174,12 +181,10 @@ class PracticeAddress(Base):
     __tablename__ = "practice_addresses"
     __table_args__ = {"schema": SCHEMA}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    practice_id = Column(UUID(as_uuid=True), ForeignKey(f'{SCHEMA}.practices.id'), nullable=False, unique=True)
+    practice_id = Column(String(8), ForeignKey(f'{SCHEMA}.practices.practice_id'), primary_key=True)
     line1 = Column(String(255), nullable=False)
     line2 = Column(String(255), nullable=True)
     city = Column(String(100), nullable=False)
-    county = Column(String(100), nullable=True)
     postcode = Column(String(20), nullable=False)
     country = Column(String(100), nullable=False, default="United Kingdom")
 
@@ -195,7 +200,7 @@ class Clinician(Base):
     __tablename__ = "clinicians"
     __table_args__ = {"schema": SCHEMA}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    clinician_id = Column(String(8), primary_key=True, default=generate_alphanumeric_id)
     title = Column(String, nullable=False)
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
@@ -222,11 +227,10 @@ class ClinicianAddress(Base):
     __table_args__ = {"schema": SCHEMA}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    clinician_id = Column(UUID(as_uuid=True), ForeignKey(f'{SCHEMA}.clinicians.id'), nullable=False, unique=True)
+    clinician_id = Column(String(8), ForeignKey(f'{SCHEMA}.clinicians.clinician_id'), nullable=False, unique=True)
     line1 = Column(String(255), nullable=False)
     line2 = Column(String(255), nullable=True)
     city = Column(String(100), nullable=False)
-    county = Column(String(100), nullable=True)
     postcode = Column(String(20), nullable=False)
     country = Column(String(100), nullable=False, default="United Kingdom")
 
@@ -263,7 +267,7 @@ class ClientAdjustmentType(Base):
     __table_args__ = {"schema": SCHEMA}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    client_id = Column(UUID(as_uuid=True), ForeignKey(f'{SCHEMA}.clients.id'), nullable=False)
+    tenant_id = Column(String(8), ForeignKey(f'{SCHEMA}.clients.tenant_id'), nullable=False)
     name = Column(String(255), nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
@@ -277,8 +281,8 @@ class ClientDenpayPeriod(Base):
     __table_args__ = {"schema": SCHEMA}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    client_id = Column(UUID(as_uuid=True), ForeignKey(f'{SCHEMA}.clients.id'), nullable=False)
-    month = Column(Date, nullable=False)  # First day of month
+    tenant_id = Column(String(8), ForeignKey(f'{SCHEMA}.clients.tenant_id'), nullable=False)
+    month = Column(Date, nullable=False)
     from_date = Column(Date, nullable=False)
     to_date = Column(Date, nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
@@ -293,8 +297,8 @@ class ClientFYEndPeriod(Base):
     __table_args__ = {"schema": SCHEMA}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    client_id = Column(UUID(as_uuid=True), ForeignKey(f'{SCHEMA}.clients.id'), nullable=False)
-    month = Column(Date, nullable=False)  # First day of month
+    tenant_id = Column(String(8), ForeignKey(f'{SCHEMA}.clients.tenant_id'), nullable=False)
+    month = Column(Date, nullable=False)
     from_date = Column(Date, nullable=False)
     to_date = Column(Date, nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())

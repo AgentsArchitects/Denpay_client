@@ -16,7 +16,6 @@ export interface Client {
   address_line_1?: string;
   address_line_2?: string;
   city?: string;
-  county?: string;
   country?: string;
   company_registration?: string;
   xero_vat_type?: string;
@@ -52,7 +51,7 @@ export interface Client {
 
 export interface ClientUser {
   id?: string;
-  client_id: string;
+  tenant_id: string;
   name: string;
   email: string;
   roles: string;
@@ -90,7 +89,7 @@ class ClientService {
     return response.data;
   }
 
-  async createClientUser(clientId: string, data: Omit<ClientUser, 'id' | 'client_id' | 'status' | 'created_at'>): Promise<ClientUser> {
+  async createClientUser(clientId: string, data: Omit<ClientUser, 'id' | 'tenant_id' | 'status' | 'created_at'>): Promise<ClientUser> {
     const response = await apiClient.post<ClientUser>(
       API_ENDPOINTS.CLIENTS.CREATE_USER(clientId),
       data

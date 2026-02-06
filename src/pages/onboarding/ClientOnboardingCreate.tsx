@@ -163,7 +163,6 @@ const ClientOnboardingCreate: React.FC = () => {
           line1: clientInfo.addressLine1,
           line2: clientInfo.addressLine2 || null,
           city: clientInfo.city,
-          county: clientInfo.county || null,
           postcode: clientInfo.postCode,
           country: clientInfo.country || 'United Kingdom'
         },
@@ -446,7 +445,6 @@ const ClientOnboardingCreate: React.FC = () => {
             addressLine1: clientData.address?.line1 || '',
             addressLine2: clientData.address?.line2 || '',
             city: clientData.address?.city || '',
-            county: clientData.address?.county || '',
             postCode: clientData.address?.postcode || '',
             country: clientData.address?.country || 'United Kingdom',
             companyRegNo: clientData.company_registration_no || '',
@@ -685,17 +683,6 @@ const ClientOnboardingCreate: React.FC = () => {
               </div>
               <div className="form-col">
                 <Form.Item
-                  label="County"
-                  name="county"
-                >
-                  <Input placeholder="Enter county" />
-                </Form.Item>
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-col">
-                <Form.Item
                   label="Country"
                   name="country"
                   rules={[{ required: true, message: 'Please select country' }]}
@@ -707,6 +694,9 @@ const ClientOnboardingCreate: React.FC = () => {
                   </Select>
                 </Form.Item>
               </div>
+            </div>
+
+            <div className="form-row">
               <div className="form-col">
                 <Form.Item
                   label="Company House Registration No."
@@ -722,10 +712,7 @@ const ClientOnboardingCreate: React.FC = () => {
                   />
                 </Form.Item>
               </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-col-full">
+              <div className="form-col">
                 <Form.Item
                   label="Xero VAT Tax Type"
                   name="xeroVatTaxType"
@@ -734,6 +721,7 @@ const ClientOnboardingCreate: React.FC = () => {
                 </Form.Item>
               </div>
             </div>
+
           </Form>
         </div>
       ),

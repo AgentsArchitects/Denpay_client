@@ -10,7 +10,7 @@ from uuid import UUID
 
 class PracticeResponse(BaseModel):
     """Practice/Location response schema"""
-    id: UUID
+    id: str  # practice_id (8-char alphanumeric)
     name: str
     location_id: str
     status: str
@@ -26,7 +26,6 @@ class ClientAddressBase(BaseModel):
     line1: str = Field(..., description="Address line 1")
     line2: Optional[str] = Field(None, description="Address line 2")
     city: str = Field(..., description="City")
-    county: Optional[str] = Field(None, description="County/State")
     postcode: str = Field(..., description="Postal code")
     country: str = Field(default="United Kingdom", description="Country")
 
@@ -36,8 +35,6 @@ class ClientAddressCreate(ClientAddressBase):
 
 
 class ClientAddressResponse(ClientAddressBase):
-    id: UUID
-
     class Config:
         from_attributes = True
 
@@ -135,31 +132,31 @@ class ClientBase(BaseModel):
     # Tab 3: License Information
     accounting_system: Optional[str] = Field(None, description="Accounting system: xero, sage")
     xero_app: Optional[str] = Field(None, description="Xero app identifier")
-    license_workfin_users: Optional[int] = Field(0, alias="workfin_users_count", description="Number of WorkFin user licenses")
-    license_compass_connections: Optional[int] = Field(0, alias="compass_connections_count", description="Number of Compass connection licenses")
-    license_finance_system_connections: Optional[int] = Field(0, alias="finance_system_connections_count", description="Number of finance system connection licenses")
-    license_pms_connections: Optional[int] = Field(0, alias="pms_connections_count", description="Number of PMS connection licenses")
-    license_purchasing_system_connections: Optional[int] = Field(0, alias="purchasing_system_connections_count", description="Number of purchasing system connection licenses")
+    license_workfin_users: Optional[int] = Field(0, alias="workfin_users_count")
+    license_compass_connections: Optional[int] = Field(0, alias="compass_connections_count")
+    license_finance_system_connections: Optional[int] = Field(0, alias="finance_system_connections_count")
+    license_pms_connections: Optional[int] = Field(0, alias="pms_connections_count")
+    license_purchasing_system_connections: Optional[int] = Field(0, alias="purchasing_system_connections_count")
 
     # Tab 4: Accountant Details
     accountant_name: Optional[str] = Field(None, description="Accountant name")
     accountant_address: Optional[str] = Field(None, description="Accountant address")
-    accountant_contact_no: Optional[str] = Field(None, alias="accountant_contact", description="Accountant contact number")
+    accountant_contact_no: Optional[str] = Field(None, alias="accountant_contact")
     accountant_email: Optional[EmailStr] = Field(None, description="Accountant email")
 
     # Tab 5: IT Provider Details
-    it_provider_name: Optional[str] = Field(None, description="IT provider name")
-    it_provider_address: Optional[str] = Field(None, description="IT provider address")
-    it_provider_postcode: Optional[str] = Field(None, description="IT provider postcode")
-    it_provider_contact_name: Optional[str] = Field(None, description="IT provider contact name")
-    it_provider_phone_1: Optional[str] = Field(None, description="IT provider phone 1")
-    it_provider_phone_2: Optional[str] = Field(None, description="IT provider phone 2")
-    it_provider_email: Optional[EmailStr] = Field(None, description="IT provider email")
-    it_provider_notes: Optional[str] = Field(None, description="IT provider additional notes")
+    it_provider_name: Optional[str] = Field(None)
+    it_provider_address: Optional[str] = Field(None)
+    it_provider_postcode: Optional[str] = Field(None)
+    it_provider_contact_name: Optional[str] = Field(None)
+    it_provider_phone_1: Optional[str] = Field(None)
+    it_provider_phone_2: Optional[str] = Field(None)
+    it_provider_email: Optional[EmailStr] = Field(None)
+    it_provider_notes: Optional[str] = Field(None)
 
     # Tab 10: Feature Access
-    feature_clinician_pay_enabled: Optional[bool] = Field(True, alias="clinician_pay_system_enabled", description="Clinician pay system enabled")
-    feature_powerbi_enabled: Optional[bool] = Field(False, alias="power_bi_reports_enabled", description="Power BI reports enabled")
+    feature_clinician_pay_enabled: Optional[bool] = Field(True, alias="clinician_pay_system_enabled")
+    feature_powerbi_enabled: Optional[bool] = Field(False, alias="power_bi_reports_enabled")
 
     class Config:
         populate_by_name = True
@@ -168,24 +165,15 @@ class ClientBase(BaseModel):
 
 class ClientCreate(ClientBase):
     """Schema for creating a new client with all related data"""
-
-    # Nested objects
     address: ClientAddressCreate = Field(..., description="Client address")
     admin_user: AdminUserCreate = Field(..., description="Admin user to create")
-
-    # Tab 6: Adjustment Types
-    adjustment_types: Optional[List[AdjustmentTypeCreate]] = Field(default_factory=list, description="List of adjustment types")
-
-    # Tab 8: Denpay Periods
-    denpay_periods: Optional[List[DenpayPeriodCreate]] = Field(default_factory=list, description="List of Denpay periods")
-
-    # Tab 9: FY End Periods
-    fy_end_periods: Optional[List[FYEndPeriodCreate]] = Field(default_factory=list, description="List of FY end periods")
+    adjustment_types: Optional[List[AdjustmentTypeCreate]] = Field(default_factory=list)
+    denpay_periods: Optional[List[DenpayPeriodCreate]] = Field(default_factory=list)
+    fy_end_periods: Optional[List[FYEndPeriodCreate]] = Field(default_factory=list)
 
 
 class ClientUpdate(BaseModel):
     """Schema for updating a client - all fields optional"""
-
     legal_trading_name: Optional[str] = Field(None, alias="legal_client_trading_name")
     workfin_reference: Optional[str] = Field(None, alias="workfin_legal_entity_reference")
     expanded_logo_url: Optional[str] = None
@@ -225,14 +213,12 @@ class ClientUpdate(BaseModel):
 
 class ClientResponse(BaseModel):
     """Schema for client response with all related data"""
-
-    id: UUID
-    tenant_id: Optional[str] = None
+    id: str  # tenant_id (8-char alphanumeric)
+    tenant_id: str
     status: str
     created_at: datetime
     updated_at: datetime
 
-    # Client fields - using direct field names (no aliases)
     legal_trading_name: str
     workfin_reference: str
     expanded_logo_url: Optional[str] = None
@@ -264,7 +250,6 @@ class ClientResponse(BaseModel):
     feature_clinician_pay_enabled: Optional[bool] = True
     feature_powerbi_enabled: Optional[bool] = False
 
-    # Related data
     address: Optional[ClientAddressResponse] = None
     users: List[UserResponse] = Field(default_factory=list)
     practices: List[PracticeResponse] = Field(default_factory=list)
@@ -278,9 +263,8 @@ class ClientResponse(BaseModel):
 
 class ClientListItem(BaseModel):
     """Schema for client list items (summary view)"""
-
-    id: UUID
-    tenant_id: Optional[str] = None
+    id: str  # tenant_id (8-char alphanumeric)
+    tenant_id: str
     legal_trading_name: str
     workfin_reference: str
     status: str

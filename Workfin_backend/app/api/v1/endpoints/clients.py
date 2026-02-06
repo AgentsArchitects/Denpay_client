@@ -20,7 +20,6 @@ from app.db.models import (
     ClientFYEndPeriod
 )
 from datetime import datetime
-import uuid
 
 router = APIRouter()
 
@@ -47,7 +46,7 @@ async def get_clients(db: AsyncSession = Depends(get_db)):
 
         return [
             ClientListItem(
-                id=client.id,
+                id=client.tenant_id,
                 tenant_id=client.tenant_id,
                 legal_trading_name=client.legal_trading_name,
                 workfin_reference=client.workfin_reference,
@@ -81,7 +80,7 @@ async def get_client(client_id: str, db: AsyncSession = Depends(get_db)):
                 selectinload(Client.denpay_periods),
                 selectinload(Client.fy_end_periods)
             )
-            .where(Client.id == uuid.UUID(client_id))
+            .where(Client.tenant_id == client_id)
         )
         client = result.scalar_one_or_none()
 
@@ -92,11 +91,8 @@ async def get_client(client_id: str, db: AsyncSession = Depends(get_db)):
             )
 
         return ClientResponse.from_orm(client)
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid client ID format"
-        )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -158,11 +154,10 @@ async def create_client(client: ClientCreate, db: AsyncSession = Depends(get_db)
 
         # Step 2: Create client address
         client_address = ClientAddress(
-            client_id=new_client.id,
+            tenant_id=new_client.tenant_id,
             line1=client.address.line1,
             line2=client.address.line2,
             city=client.address.city,
-            county=client.address.county,
             postcode=client.address.postcode,
             country=client.address.country
         )
@@ -172,7 +167,7 @@ async def create_client(client: ClientCreate, db: AsyncSession = Depends(get_db)
         admin_user = User(
             email=client.admin_user.email,
             name=client.admin_user.name,
-            client_id=new_client.id
+            tenant_id=new_client.tenant_id
         )
         db.add(admin_user)
         await db.flush()  # Flush to get user ID
@@ -190,7 +185,7 @@ async def create_client(client: ClientCreate, db: AsyncSession = Depends(get_db)
         ]
         for adj_type_data in adjustment_types_to_create:
             adj_type = ClientAdjustmentType(
-                client_id=new_client.id,
+                tenant_id=new_client.tenant_id,
                 name=adj_type_data.name if hasattr(adj_type_data, 'name') else adj_type_data['name']
             )
             db.add(adj_type)
@@ -198,7 +193,7 @@ async def create_client(client: ClientCreate, db: AsyncSession = Depends(get_db)
         # Step 6: Create Denpay periods (if any)
         for period_data in client.denpay_periods or []:
             denpay_period = ClientDenpayPeriod(
-                client_id=new_client.id,
+                tenant_id=new_client.tenant_id,
                 month=period_data.month,
                 from_date=period_data.from_date,
                 to_date=period_data.to_date
@@ -208,7 +203,7 @@ async def create_client(client: ClientCreate, db: AsyncSession = Depends(get_db)
         # Step 7: Create FY End periods (if any)
         for period_data in client.fy_end_periods or []:
             fy_end_period = ClientFYEndPeriod(
-                client_id=new_client.id,
+                tenant_id=new_client.tenant_id,
                 month=period_data.month,
                 from_date=period_data.from_date,
                 to_date=period_data.to_date
@@ -230,7 +225,7 @@ async def create_client(client: ClientCreate, db: AsyncSession = Depends(get_db)
                 selectinload(Client.denpay_periods),
                 selectinload(Client.fy_end_periods)
             )
-            .where(Client.id == new_client.id)
+            .where(Client.tenant_id == new_client.tenant_id)
         )
         client_with_relations = result.scalar_one()
 
@@ -259,7 +254,7 @@ async def update_client(client_id: str, client: ClientUpdate, db: AsyncSession =
                 selectinload(Client.denpay_periods),
                 selectinload(Client.fy_end_periods)
             )
-            .where(Client.id == uuid.UUID(client_id))
+            .where(Client.tenant_id == client_id)
         )
         existing_client = result.scalar_one_or_none()
 
@@ -338,11 +333,8 @@ async def update_client(client_id: str, client: ClientUpdate, db: AsyncSession =
         await db.refresh(existing_client)
 
         return ClientResponse.from_orm(existing_client)
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid client ID format"
-        )
+    except HTTPException:
+        raise
     except Exception as e:
         await db.rollback()
         raise HTTPException(
@@ -356,7 +348,7 @@ async def delete_client(client_id: str, db: AsyncSession = Depends(get_db)):
     """Toggle client status between Active and Inactive (soft delete/restore)"""
     try:
         result = await db.execute(
-            select(Client).where(Client.id == uuid.UUID(client_id))
+            select(Client).where(Client.tenant_id == client_id)
         )
         client = result.scalar_one_or_none()
 
@@ -370,11 +362,8 @@ async def delete_client(client_id: str, db: AsyncSession = Depends(get_db)):
         client.status = "Inactive" if client.status == "Active" else "Active"
         await db.commit()
         return None
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid client ID format"
-        )
+    except HTTPException:
+        raise
     except Exception as e:
         await db.rollback()
         raise HTTPException(
@@ -389,7 +378,7 @@ async def get_client_users(client_id: str, db: AsyncSession = Depends(get_db)):
     try:
         # Verify client exists
         client_result = await db.execute(
-            select(Client).where(Client.id == uuid.UUID(client_id))
+            select(Client).where(Client.tenant_id == client_id)
         )
         if not client_result.scalar_one_or_none():
             raise HTTPException(
@@ -399,14 +388,14 @@ async def get_client_users(client_id: str, db: AsyncSession = Depends(get_db)):
 
         # Get users for this client
         result = await db.execute(
-            select(User).where(User.client_id == uuid.UUID(client_id))
+            select(User).where(User.tenant_id == client_id)
         )
         users = result.scalars().all()
 
         return [
             {
                 "id": str(user.id),
-                "client_id": client_id,
+                "tenant_id": client_id,
                 "name": user.name,
                 "email": user.email,
                 "roles": "Client User",  # TODO: Get actual roles from user_roles table
@@ -415,11 +404,8 @@ async def get_client_users(client_id: str, db: AsyncSession = Depends(get_db)):
             }
             for user in users
         ]
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid client ID format"
-        )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -433,7 +419,7 @@ async def create_client_user(client_id: str, user_data: dict, db: AsyncSession =
     try:
         # Verify client exists
         client_result = await db.execute(
-            select(Client).where(Client.id == uuid.UUID(client_id))
+            select(Client).where(Client.tenant_id == client_id)
         )
         if not client_result.scalar_one_or_none():
             raise HTTPException(
@@ -445,7 +431,7 @@ async def create_client_user(client_id: str, user_data: dict, db: AsyncSession =
         new_user = User(
             email=user_data.get("email"),
             name=user_data.get("name"),
-            client_id=uuid.UUID(client_id)
+            tenant_id=client_id
         )
         db.add(new_user)
         await db.commit()
@@ -453,17 +439,14 @@ async def create_client_user(client_id: str, user_data: dict, db: AsyncSession =
 
         return {
             "id": str(new_user.id),
-            "client_id": client_id,
+            "tenant_id": client_id,
             "name": new_user.name,
             "email": new_user.email,
             "status": "Active",
             "created_at": new_user.created_at
         }
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid client ID format"
-        )
+    except HTTPException:
+        raise
     except Exception as e:
         await db.rollback()
         raise HTTPException(
