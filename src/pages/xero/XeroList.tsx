@@ -96,7 +96,7 @@ const XeroList: React.FC = () => {
   const handleConnectToXero = async () => {
     try {
       setConnecting(true);
-      await xeroService.connectToXero();
+      await xeroService.connectToXero(selectedClient || undefined);
     } catch (error) {
       console.error('Failed to connect to Xero:', error);
       message.error('Failed to initiate Xero connection. Please try again.');

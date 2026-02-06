@@ -305,3 +305,22 @@ class ClientFYEndPeriod(Base):
 
     # Relationships
     client = relationship("Client", back_populates="fy_end_periods")
+
+
+class XeroConnection(Base):
+    """Xero connection linked to a client via tenant_id"""
+    __tablename__ = "xero_connections"
+    __table_args__ = {"schema": SCHEMA}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    xero_tenant_id = Column(String(255), nullable=False)
+    tenant_name = Column(String(255), nullable=True)
+    access_token = Column(Text, nullable=True)
+    refresh_token = Column(Text, nullable=True)
+    token_expires_at = Column(DateTime(timezone=True), nullable=True)
+    status = Column(String(50), nullable=False, default="CONNECTED")
+    last_sync_at = Column(DateTime(timezone=True), nullable=True)
+    connected_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+    tenant_id = Column(String(8), ForeignKey(f'{SCHEMA}.clients.tenant_id'), nullable=False)

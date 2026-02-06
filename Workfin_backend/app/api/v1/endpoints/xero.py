@@ -77,6 +77,7 @@ from app.schemas.xero import (
     XeroSyncStatus
 )
 from app.db.database import get_db
+from app.db.models import XeroConnection
 from app.db.xero_models import (
     XeroToken,
     XeroAccount,
@@ -132,6 +133,9 @@ async def xero_callback(
     Step 2: Handle OAuth callback from Xero
     Exchange authorization code for tokens
     """
+    # state contains the 8-char tenant_id of the client (or "default")
+    client_tenant_id = state if state != "default" else None
+
     try:
         # Exchange code for tokens - this is the critical step
         tokens = await xero_service.exchange_code_for_tokens(code)
@@ -144,9 +148,11 @@ async def xero_callback(
         try:
             for tenant in tenants:
                 integration_id = generate_integration_id()
+
+                # Save to xero.tokens table
                 token_record = XeroToken(
-                    client_id=uuid.UUID(state) if state != "default" else uuid.uuid4(),
-                    tenant_id=tenant["tenantId"],
+                    client_id=uuid.uuid4(),  # Generate a new UUID for xero.tokens reference
+                    tenant_id=tenant["tenantId"],  # Xero's UUID tenant ID
                     tenant_name=tenant.get("tenantName"),
                     integration_id=integration_id,
                     access_token=tokens["access_token"],
@@ -156,7 +162,7 @@ async def xero_callback(
                     scope=tokens.get("scope")
                 )
 
-                # Upsert token
+                # Upsert token into xero.tokens
                 stmt = insert(XeroToken).values(
                     client_id=token_record.client_id,
                     tenant_id=token_record.tenant_id,
@@ -181,10 +187,44 @@ async def xero_callback(
                 )
                 await db.execute(stmt)
 
+                # Also save to denpay-dev.xero_connections (links Xero to our tenant_id)
+                if client_tenant_id:
+                    # Check if a connection already exists for this tenant
+                    existing = await db.execute(
+                        select(XeroConnection).where(XeroConnection.tenant_id == client_tenant_id)
+                    )
+                    existing_conn = existing.scalars().first()
+
+                    if existing_conn:
+                        # Update existing connection
+                        existing_conn.xero_tenant_id = tenant["tenantId"]
+                        existing_conn.tenant_name = tenant.get("tenantName")
+                        existing_conn.access_token = tokens["access_token"]
+                        existing_conn.refresh_token = tokens["refresh_token"]
+                        existing_conn.token_expires_at = tokens["expires_at"]
+                        existing_conn.status = "CONNECTED"
+                        existing_conn.connected_at = datetime.now()
+                        existing_conn.updated_at = datetime.now()
+                    else:
+                        # Insert new connection
+                        new_xero_conn = XeroConnection(
+                            xero_tenant_id=tenant["tenantId"],
+                            tenant_name=tenant.get("tenantName"),
+                            access_token=tokens["access_token"],
+                            refresh_token=tokens["refresh_token"],
+                            token_expires_at=tokens["expires_at"],
+                            status="CONNECTED",
+                            connected_at=datetime.now(),
+                            tenant_id=client_tenant_id  # Our 8-char alphanumeric tenant ID
+                        )
+                        db.add(new_xero_conn)
+
             await db.commit()
         except Exception as db_error:
             # Log DB error but don't fail - tokens are in memory
             print(f"Warning: Failed to persist tokens to database: {db_error}")
+            import traceback
+            traceback.print_exc()
             # Don't raise - the OAuth flow succeeded
 
         # Redirect to frontend success page
