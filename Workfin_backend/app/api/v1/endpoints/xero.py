@@ -151,7 +151,6 @@ async def xero_callback(
 
                 # Save to xero.tokens table
                 token_record = XeroToken(
-                    client_id=uuid.uuid4(),  # Generate a new UUID for xero.tokens reference
                     tenant_id=tenant["tenantId"],  # Xero's UUID tenant ID
                     tenant_name=tenant.get("tenantName"),
                     integration_id=integration_id,
@@ -164,7 +163,6 @@ async def xero_callback(
 
                 # Upsert token into xero.tokens
                 stmt = insert(XeroToken).values(
-                    client_id=token_record.client_id,
                     tenant_id=token_record.tenant_id,
                     tenant_name=token_record.tenant_name,
                     integration_id=token_record.integration_id,
@@ -195,10 +193,12 @@ async def xero_callback(
                     )
                     existing_conn = existing.scalars().first()
 
+                    xero_tenant_name = tenant.get("tenantName") or "Unknown"
+
                     if existing_conn:
                         # Update existing connection
                         existing_conn.xero_tenant_id = tenant["tenantId"]
-                        existing_conn.tenant_name = tenant.get("tenantName")
+                        existing_conn.tenant_name = xero_tenant_name
                         existing_conn.access_token = tokens["access_token"]
                         existing_conn.refresh_token = tokens["refresh_token"]
                         existing_conn.token_expires_at = tokens["expires_at"]
@@ -209,7 +209,7 @@ async def xero_callback(
                         # Insert new connection
                         new_xero_conn = XeroConnection(
                             xero_tenant_id=tenant["tenantId"],
-                            tenant_name=tenant.get("tenantName"),
+                            tenant_name=xero_tenant_name,
                             access_token=tokens["access_token"],
                             refresh_token=tokens["refresh_token"],
                             token_expires_at=tokens["expires_at"],

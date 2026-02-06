@@ -23,7 +23,6 @@ class XeroToken(Base):
     __table_args__ = {"schema": XERO_SCHEMA}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    client_id = Column(UUID(as_uuid=True), nullable=False)  # Reference to clients table
     tenant_id = Column(String(100), nullable=False)  # Xero tenant/org ID
     tenant_name = Column(String(255), nullable=True)
     integration_id = Column(String(8), nullable=True, unique=True, default=generate_integration_id)
