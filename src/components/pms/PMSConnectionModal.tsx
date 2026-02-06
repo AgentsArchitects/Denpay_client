@@ -68,15 +68,9 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
         if (values.carestack_password) syncConfig.password = values.carestack_password;
       }
 
-      // Validate required fields based on backend schema
-      if (!tenantId) {
-        message.error('Tenant ID is required');
-        return;
-      }
-
-      // Check for duplicate integration name within this tenant
+      // Check for duplicate integration name within this tenant (only in edit mode)
       const integrationName = values.integration_name || effectiveType;
-      if (existingIntegrationNames.includes(integrationName.toLowerCase())) {
+      if (tenantId && existingIntegrationNames.includes(integrationName.toLowerCase())) {
         message.error(`Integration name "${integrationName}" already exists for this client. Please use a different name.`);
         setLoading(false);
         return;
@@ -92,7 +86,7 @@ const PMSConnectionModal: React.FC<PMSConnectionModalProps> = ({
       const integrationId = generateIntegrationId();
 
       const data: PMSConnectionCreate = {
-        tenant_id: tenantId,  // Required 8-char alphanumeric
+        tenant_id: tenantId || '',  // Will be set when client is saved (for pending connections)
         tenant_name: tenantName,  // Optional
         practice_id: practiceId,  // Optional UUID
         pms_type: effectiveType,  // Required
