@@ -313,7 +313,7 @@ class XeroConnection(Base):
     __table_args__ = {"schema": SCHEMA}
 
     xero_tenant_id = Column(String(8), primary_key=True, default=generate_alphanumeric_id)
-    tenant_name = Column(String(255), nullable=False)
+    xero_tenant_name = Column(String(255), nullable=False)
     access_token = Column(Text, nullable=False)
     refresh_token = Column(Text, nullable=False)
     token_expires_at = Column(DateTime(timezone=True), nullable=False)

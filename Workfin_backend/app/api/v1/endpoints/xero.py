@@ -77,7 +77,8 @@ from app.schemas.xero import (
     XeroSyncStatus
 )
 from app.db.database import get_db
-from app.db.models import XeroConnection
+from app.db.models import XeroConnection, Client
+from app.db.pms_models import PMSConnection
 from app.db.xero_models import (
     XeroToken,
     XeroAccount,
@@ -143,6 +144,16 @@ async def xero_callback(
         # Get connected tenants
         tenants = await xero_service.get_tenants()
 
+        # Get client name if we have a client_tenant_id
+        client_tenant_name = None
+        if client_tenant_id:
+            client_result = await db.execute(
+                select(Client).where(Client.tenant_id == client_tenant_id)
+            )
+            client = client_result.scalars().first()
+            if client:
+                client_tenant_name = client.name
+
         # Try to store tokens in database, but don't fail if DB has issues
         # The tokens are already stored in memory by exchange_code_for_tokens
         try:
@@ -193,7 +204,7 @@ async def xero_callback(
                     existing = await db.execute(
                         select(XeroConnection).where(
                             XeroConnection.tenant_id == client_tenant_id,
-                            XeroConnection.tenant_name == xero_tenant_name
+                            XeroConnection.xero_tenant_name == xero_tenant_name
                         )
                     )
                     existing_conn = existing.scalars().first()
@@ -206,10 +217,22 @@ async def xero_callback(
                         existing_conn.status = "CONNECTED"
                         existing_conn.connected_at = datetime.now()
                         existing_conn.updated_at = datetime.now()
+
+                        # Also update pms_connections
+                        pms_existing = await db.execute(
+                            select(PMSConnection).where(
+                                PMSConnection.integration_id == existing_conn.xero_tenant_id
+                            )
+                        )
+                        pms_conn = pms_existing.scalars().first()
+                        if pms_conn:
+                            pms_conn.connection_status = "CONNECTED"
+                            pms_conn.last_sync_at = datetime.now()
+                            pms_conn.updated_at = datetime.now()
                     else:
                         # Insert new connection (xero_tenant_id auto-generated as 8-char alphanumeric)
                         new_xero_conn = XeroConnection(
-                            tenant_name=xero_tenant_name,
+                            xero_tenant_name=xero_tenant_name,
                             access_token=tokens["access_token"],
                             refresh_token=tokens["refresh_token"],
                             token_expires_at=tokens["expires_at"],
@@ -218,6 +241,20 @@ async def xero_callback(
                             tenant_id=client_tenant_id
                         )
                         db.add(new_xero_conn)
+                        await db.flush()  # Get the auto-generated xero_tenant_id
+
+                        # Also create entry in pms_connections
+                        new_pms_conn = PMSConnection(
+                            tenant_id=client_tenant_id,
+                            tenant_name=client_tenant_name,
+                            integration_type="XERO",
+                            integration_id=new_xero_conn.xero_tenant_id,
+                            integration_name=f"Xero - {xero_tenant_name}",
+                            xero_tenant_name=xero_tenant_name,
+                            connection_status="CONNECTED",
+                            last_sync_at=datetime.now()
+                        )
+                        db.add(new_pms_conn)
 
             await db.commit()
         except Exception as db_error:

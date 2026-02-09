@@ -19,18 +19,21 @@ SOE_SCHEMA = "soe"
 # =====================
 
 class PMSConnection(Base):
-    """Unified PMS connections table for all integration types (SOE, SFD, Dentally, CareStack, Xero).
-    The integration_id references soe.soe_integrations.integration_id for SOE integrations."""
+    """Unified integration connections table for all types (SOE, SFD, Dentally, CareStack, Xero).
+    Tracks all integrations across practices - a practice can have multiple integrations of each type.
+    The integration_id references the source integration (soe.soe_integrations for SOE, xero_connections for Xero, etc.)"""
     __tablename__ = "pms_connections"
     __table_args__ = {"schema": INTEGRATIONS_SCHEMA}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id = Column(String(8), nullable=False)  # 8-char alphanumeric tenant ID
-    tenant_name = Column(String, nullable=True)
-    practice_id = Column(UUID(as_uuid=True), nullable=True)
-    pms_type = Column(String, nullable=False)  # SOE, SFD, DENTALLY, CARESTACK, XERO
-    integration_id = Column(String(8), nullable=False)  # 8-char alphanumeric, references soe.soe_integrations for SOE
-    integration_name = Column(String, nullable=False)
+    tenant_id = Column(String(8), nullable=False)  # 8-char alphanumeric client ID
+    tenant_name = Column(String, nullable=True)  # Client name
+    practice_id = Column(String(8), nullable=True)  # 8-char alphanumeric practice ID
+    practice_name = Column(String(255), nullable=True)  # Practice name
+    integration_type = Column(String(50), nullable=False)  # SOE, SFD, DENTALLY, CARESTACK, XERO
+    integration_id = Column(String(8), nullable=False, unique=True)  # 8-char alphanumeric, unique integration ID
+    integration_name = Column(String(255), nullable=False)  # Name of this integration
+    xero_tenant_name = Column(String(255), nullable=True)  # Xero organization name (for Xero integrations only)
     external_practice_id = Column(String, nullable=True)
     external_site_code = Column(String, nullable=True)
     data_source = Column(String, nullable=True)  # GOLD_LAYER, DIRECT_API, FILE_UPLOAD
