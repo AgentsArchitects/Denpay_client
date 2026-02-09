@@ -37,14 +37,14 @@ def to_uuid(value: str) -> uuid_mod.UUID:
 async def list_connections(
     tenant_id: Optional[str] = Query(None),
     practice_id: Optional[str] = Query(None),
-    pms_type: Optional[str] = Query(None),
+    integration_type: Optional[str] = Query(None),
     integration_id: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db)
 ):
-    """List PMS connections with optional filters"""
+    """List integration connections with optional filters"""
     query = select(PMSConnection)
     count_query = select(func.count(PMSConnection.id))
 
@@ -52,12 +52,11 @@ async def list_connections(
         query = query.where(PMSConnection.tenant_id == tenant_id)
         count_query = count_query.where(PMSConnection.tenant_id == tenant_id)
     if practice_id:
-        practice_uuid = to_uuid(practice_id)
-        query = query.where(PMSConnection.practice_id == practice_uuid)
-        count_query = count_query.where(PMSConnection.practice_id == practice_uuid)
-    if pms_type:
-        query = query.where(PMSConnection.pms_type == pms_type)
-        count_query = count_query.where(PMSConnection.pms_type == pms_type)
+        query = query.where(PMSConnection.practice_id == practice_id)
+        count_query = count_query.where(PMSConnection.practice_id == practice_id)
+    if integration_type:
+        query = query.where(PMSConnection.integration_type == integration_type)
+        count_query = count_query.where(PMSConnection.integration_type == integration_type)
     if integration_id:
         query = query.where(PMSConnection.integration_id == integration_id)
         count_query = count_query.where(PMSConnection.integration_id == integration_id)
@@ -107,17 +106,17 @@ async def create_connection(
     data: PMSConnectionCreate,
     db: AsyncSession = Depends(get_db)
 ):
-    """Create a new PMS connection"""
-    practice_uuid = to_uuid(data.practice_id) if data.practice_id else None
-
+    """Create a new integration connection"""
     connection = PMSConnection(
         id=uuid_mod.uuid4(),
         tenant_id=data.tenant_id,
         tenant_name=data.tenant_name,
-        practice_id=practice_uuid,
-        pms_type=data.pms_type.value,
+        practice_id=data.practice_id,
+        practice_name=data.practice_name,
+        integration_type=data.integration_type.value,
         integration_id=data.integration_id,
         integration_name=data.integration_name,
+        xero_tenant_name=data.xero_tenant_name,
         external_practice_id=data.external_practice_id,
         external_site_code=data.external_site_code,
         data_source=data.data_source,

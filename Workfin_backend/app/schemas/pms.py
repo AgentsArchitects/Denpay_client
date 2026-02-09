@@ -42,9 +42,11 @@ class PMSConnectionCreate(BaseModel):
     tenant_id: str  # 8-char alphanumeric tenant ID
     tenant_name: Optional[str] = None
     practice_id: Optional[str] = None
-    pms_type: PMSType
+    practice_name: Optional[str] = None
+    integration_type: PMSType
     integration_id: str  # 8-char alphanumeric integration ID (from soe_integrations for SOE)
     integration_name: str
+    xero_tenant_name: Optional[str] = None
     external_practice_id: Optional[str] = None
     external_site_code: Optional[str] = None
     data_source: Optional[str] = "GOLD_LAYER"
@@ -77,9 +79,11 @@ class PMSConnectionResponse(BaseModel):
     tenant_id: str  # 8-char alphanumeric
     tenant_name: Optional[str] = None
     practice_id: Optional[str] = None
-    pms_type: str
+    practice_name: Optional[str] = None
+    integration_type: str  # SOE, SFD, DENTALLY, CARESTACK, XERO
     integration_id: str  # 8-char alphanumeric
     integration_name: str
+    xero_tenant_name: Optional[str] = None
     external_practice_id: Optional[str] = None
     external_site_code: Optional[str] = None
     data_source: Optional[str] = None
