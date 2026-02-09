@@ -2,7 +2,7 @@
 PMS Integration Schemas
 Pydantic models for PMS API requests and responses
 """
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, Field
 from typing import Optional, List, Any
 from datetime import datetime, date, time
 from enum import Enum
@@ -43,7 +43,7 @@ class PMSConnectionCreate(BaseModel):
     tenant_name: Optional[str] = None
     practice_id: Optional[str] = None
     practice_name: Optional[str] = None
-    integration_type: PMSType
+    integration_type: PMSType = Field(alias='pms_type')  # Accept both pms_type and integration_type
     integration_id: str  # 8-char alphanumeric integration ID (from soe_integrations for SOE)
     integration_name: str
     xero_tenant_name: Optional[str] = None
@@ -57,6 +57,9 @@ class PMSConnectionCreate(BaseModel):
     sync_providers: bool = True
     sync_treatments: bool = True
     sync_billing: bool = False
+
+    class Config:
+        populate_by_name = True
 
 
 class PMSConnectionUpdate(BaseModel):
@@ -80,7 +83,7 @@ class PMSConnectionResponse(BaseModel):
     tenant_name: Optional[str] = None
     practice_id: Optional[str] = None
     practice_name: Optional[str] = None
-    integration_type: str  # SOE, SFD, DENTALLY, CARESTACK, XERO
+    integration_type: str = Field(alias='pms_type')  # SOE, SFD, DENTALLY, CARESTACK, XERO
     integration_id: str  # 8-char alphanumeric
     integration_name: str
     xero_tenant_name: Optional[str] = None
@@ -113,6 +116,7 @@ class PMSConnectionResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        populate_by_name = True
 
 
 # ==================

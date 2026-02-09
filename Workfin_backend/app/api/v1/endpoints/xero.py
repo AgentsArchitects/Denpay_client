@@ -152,7 +152,7 @@ async def xero_callback(
             )
             client = client_result.scalars().first()
             if client:
-                client_tenant_name = client.name
+                client_tenant_name = client.legal_trading_name
 
         # Try to store tokens in database, but don't fail if DB has issues
         # The tokens are already stored in memory by exchange_code_for_tokens

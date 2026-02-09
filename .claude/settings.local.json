@@ -25,7 +25,9 @@
       "Bash(git reset:*)",
       "Bash(gh run list:*)",
       "Bash(git status:*)",
-      "Bash(if exist Workfin_backendstatic rmdir /s /q Workfin_backendstatic)"
+      "Bash(if exist Workfin_backendstatic rmdir /s /q Workfin_backendstatic)",
+      "Bash(zip:*)",
+      "Bash(az webapp deploy:*)"
     ]
   }
 }
