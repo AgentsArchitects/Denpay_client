@@ -27,3 +27,21 @@ node_modules
 *.njsproj
 *.sln
 *.sw?
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+denpay_venv/
+ENV/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Deployment artifacts
+*.zip
+*.tar.gz
