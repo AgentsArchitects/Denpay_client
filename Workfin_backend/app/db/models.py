@@ -312,8 +312,7 @@ class XeroConnection(Base):
     __tablename__ = "xero_connections"
     __table_args__ = {"schema": SCHEMA}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    xero_tenant_id = Column(String(255), nullable=False)
+    xero_tenant_id = Column(String(8), primary_key=True, default=generate_alphanumeric_id)
     tenant_name = Column(String(255), nullable=False)
     access_token = Column(Text, nullable=False)
     refresh_token = Column(Text, nullable=False)

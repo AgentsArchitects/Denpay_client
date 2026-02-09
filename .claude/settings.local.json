@@ -23,7 +23,9 @@
       "Bash(git rm:*)",
       "Bash(python:*)",
       "Bash(git reset:*)",
-      "Bash(gh run list:*)"
+      "Bash(gh run list:*)",
+      "Bash(git status:*)",
+      "Bash(if exist Workfin_backendstatic rmdir /s /q Workfin_backendstatic)"
     ]
   }
 }

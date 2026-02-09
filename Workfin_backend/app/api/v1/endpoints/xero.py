@@ -187,18 +187,19 @@ async def xero_callback(
 
                 # Also save to denpay-dev.xero_connections (links Xero to our tenant_id)
                 if client_tenant_id:
-                    # Check if a connection already exists for this tenant
+                    xero_tenant_name = tenant.get("tenantName") or "Unknown"
+
+                    # Check if a connection already exists for this client + Xero org name
                     existing = await db.execute(
-                        select(XeroConnection).where(XeroConnection.tenant_id == client_tenant_id)
+                        select(XeroConnection).where(
+                            XeroConnection.tenant_id == client_tenant_id,
+                            XeroConnection.tenant_name == xero_tenant_name
+                        )
                     )
                     existing_conn = existing.scalars().first()
 
-                    xero_tenant_name = tenant.get("tenantName") or "Unknown"
-
                     if existing_conn:
                         # Update existing connection
-                        existing_conn.xero_tenant_id = tenant["tenantId"]
-                        existing_conn.tenant_name = xero_tenant_name
                         existing_conn.access_token = tokens["access_token"]
                         existing_conn.refresh_token = tokens["refresh_token"]
                         existing_conn.token_expires_at = tokens["expires_at"]
@@ -206,16 +207,15 @@ async def xero_callback(
                         existing_conn.connected_at = datetime.now()
                         existing_conn.updated_at = datetime.now()
                     else:
-                        # Insert new connection
+                        # Insert new connection (xero_tenant_id auto-generated as 8-char alphanumeric)
                         new_xero_conn = XeroConnection(
-                            xero_tenant_id=tenant["tenantId"],
                             tenant_name=xero_tenant_name,
                             access_token=tokens["access_token"],
                             refresh_token=tokens["refresh_token"],
                             token_expires_at=tokens["expires_at"],
                             status="CONNECTED",
                             connected_at=datetime.now(),
-                            tenant_id=client_tenant_id  # Our 8-char alphanumeric tenant ID
+                            tenant_id=client_tenant_id
                         )
                         db.add(new_xero_conn)
 
