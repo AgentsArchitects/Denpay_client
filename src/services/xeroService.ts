@@ -232,9 +232,11 @@ class XeroService {
 
   /**
    * Get list of connected Xero tenants (organizations)
+   * @param tenantId - Optional: Filter by WorkFin tenant_id
    */
-  async getTenants(): Promise<XeroTenant[]> {
-    const response = await apiClient.get<XeroTenant[]>(API_ENDPOINTS.XERO.TENANTS);
+  async getTenants(tenantId?: string): Promise<XeroTenant[]> {
+    const params = tenantId ? { tenant_id: tenantId } : {};
+    const response = await apiClient.get<XeroTenant[]>(API_ENDPOINTS.XERO.TENANTS, { params });
     return response.data;
   }
 
