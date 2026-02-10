@@ -32,6 +32,13 @@ const XeroList: React.FC = () => {
     fetchTenants();
   }, []);
 
+  // Refetch tenants when selected client changes
+  useEffect(() => {
+    if (selectedClient) {
+      fetchTenants();
+    }
+  }, [selectedClient]);
+
   const fetchClients = async () => {
     try {
       const clientList = await clientService.getClients();
@@ -69,7 +76,7 @@ const XeroList: React.FC = () => {
   const fetchTenants = async (retryCount = 0) => {
     setLoading(true);
     try {
-      const tenants = await xeroService.getTenants();
+      const tenants = await xeroService.getTenants(selectedClient);
       const integrations: XeroIntegration[] = tenants.map((tenant, index) => ({
         key: tenant.tenant_id,
         id: String(index + 1).padStart(3, '0'),

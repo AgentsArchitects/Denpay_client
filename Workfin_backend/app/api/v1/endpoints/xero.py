@@ -275,12 +275,34 @@ async def xero_callback(
 
 
 @router.get("/tenants/", response_model=List[XeroTenant])
-async def get_xero_tenants(db: AsyncSession = Depends(get_db)):
-    """Get list of connected Xero organizations"""
-    # If not authenticated in memory, try to load tokens from database
+async def get_xero_tenants(
+    tenant_id: Optional[str] = Query(None, description="Filter by WorkFin tenant_id"),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get list of connected Xero organizations, optionally filtered by tenant_id"""
+
+    # If tenant_id is provided, query from pms_connections (filtered)
+    if tenant_id:
+        result = await db.execute(
+            select(PMSConnection).where(
+                PMSConnection.integration_type == "XERO",
+                PMSConnection.tenant_id == tenant_id
+            )
+        )
+        connections = result.scalars().all()
+
+        return [
+            XeroTenant(
+                tenant_id=conn.integration_id,
+                tenant_name=conn.xero_tenant_name or conn.integration_name,
+                tenant_type="ORGANISATION"
+            )
+            for conn in connections
+        ]
+
+    # No tenant_id: Return all (backward compatible)
     if not xero_service.is_authenticated():
         try:
-            # Try to restore tokens from database
             result = await db.execute(
                 select(XeroToken).order_by(XeroToken.updated_at.desc()).limit(1)
             )
@@ -297,7 +319,6 @@ async def get_xero_tenants(db: AsyncSession = Depends(get_db)):
             else:
                 print("No token records found in database")
         except Exception as db_error:
-            # Database error - still return 401 as not authenticated
             print(f"Database error while loading tokens: {db_error}")
             import traceback
             traceback.print_exc()
@@ -324,7 +345,6 @@ async def get_xero_tenants(db: AsyncSession = Depends(get_db)):
         import traceback
         traceback.print_exc()
         error_msg = str(e)
-        # If it's a network error, provide clearer message
         if "getaddrinfo" in error_msg or "connection" in error_msg.lower():
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
