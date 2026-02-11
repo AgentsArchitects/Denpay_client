@@ -23,7 +23,7 @@ class PgBouncerConnection(Connection):
 # 3. Use custom connection class with unique prepared statement names
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=True,  # Set to False in production
+    echo=False,  # Disabled verbose SQL logging
     future=True,
     poolclass=NullPool,
     connect_args={

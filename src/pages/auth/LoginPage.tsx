@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Button, Form, Input, Alert, Divider } from 'antd';
+import { Button, Form, Input, Alert, Divider, message } from 'antd';
 import { GoogleOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import apiClient from '../../services/api';
+import { API_ENDPOINTS } from '../../config/constants';
 import './LoginPage.css';
 
 const LoginPage: React.FC = () => {
@@ -15,31 +17,49 @@ const LoginPage: React.FC = () => {
     setLoading(true);
     setError(null);
 
-    // Demo credentials
-    const DEMO_EMAIL = 'ajay.lad@workfin.com';
-    const DEMO_PASSWORD = 'Demo@123';
+    try {
+      // Call real authentication API
+      const response = await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, {
+        email: values.email,
+        password: values.password,
+      });
 
-    // Simulate login
-    setTimeout(() => {
-      if (values.email === DEMO_EMAIL && values.password === DEMO_PASSWORD) {
-        setLoading(false);
-        navigate('/dashboard');
+      const { access_token, refresh_token, user } = response.data;
+
+      // Store tokens and user info in localStorage
+      localStorage.setItem('access_token', access_token);
+      localStorage.setItem('refresh_token', refresh_token);
+      localStorage.setItem('user', JSON.stringify(user));
+
+      // Check user role and redirect accordingly
+      const userRole = user.role || user.role_type;
+
+      // CLIENT_ADMIN and CLINICIAN users should use the Client Portal, not the onboarding portal
+      if (userRole === 'CLIENT_ADMIN' || userRole === 'CLINICIAN' || userRole === 'Clinician') {
+        message.info('Redirecting to Client Portal...');
+        setTimeout(() => {
+          window.location.href = 'https://api-uat-uk-workfin-03.azurewebsites.net';
+        }, 1000);
       } else {
-        setError('Invalid email or password. Use: ajay.lad@workfin.com / Demo@123');
-        setLoading(false);
+        message.success('Login successful!');
+        navigate('/dashboard');
       }
-    }, 1000);
+    } catch (err: any) {
+      console.error('Login error:', err);
+      const errorMessage = err.message || 'Invalid email or password';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     setError(null);
 
-    // Simulate Google login
-    setTimeout(() => {
-      setGoogleLoading(false);
-      navigate('/dashboard');
-    }, 1500);
+    // TODO: Implement Google OAuth when ready
+    message.info('Google login not yet implemented');
+    setGoogleLoading(false);
   };
 
   return (
@@ -102,10 +122,10 @@ const LoginPage: React.FC = () => {
                 { required: true, message: 'Please enter your email' },
                 { type: 'email', message: 'Please enter a valid email' },
               ]}
-              initialValue="ajay.lad@workfin.com"
+              initialValue="yash.patel@workfin.co.uk"
             >
               <Input
-                placeholder="ajay.lad@workfin.com"
+                placeholder="your-email@workfin.com"
                 size="large"
                 className="login-input"
               />
@@ -115,7 +135,7 @@ const LoginPage: React.FC = () => {
               label="Password"
               name="password"
               rules={[{ required: true, message: 'Please enter your password' }]}
-              initialValue="Demo@123"
+              initialValue="Admin@123"
             >
               <Input.Password
                 placeholder="••••••••"

@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Card, Form, Input, Button, Breadcrumb, Checkbox, message } from 'antd';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
 import './WorkFinUserCreate.css';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 interface UserData {
   key: string;
@@ -16,40 +19,66 @@ const WorkFinUserCreate: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const isEditMode = !!userId;
   const [form] = Form.useForm();
-  const [adminRole, setAdminRole] = useState(false);
+  const [adminRole, setAdminRole] = useState(true); // Default to admin for Workfin Admin creation
+  const [loading, setLoading] = useState(false);
 
   const handleCancel = () => {
     navigate('/users/list');
   };
 
-  const handleSubmit = (values: any) => {
-    // Get existing users from localStorage
-    const existingUsers = JSON.parse(localStorage.getItem('workfinUsers') || '[]') as UserData[];
+  const handleSubmit = async (values: any) => {
+    setLoading(true);
 
-    if (isEditMode && userId) {
-      // Update existing user
-      const updatedUsers = existingUsers.map(user =>
-        user.key === userId
-          ? { ...user, name: values.fullName, email: values.email, role: adminRole ? 'Admin' : 'User' }
-          : user
-      );
-      localStorage.setItem('workfinUsers', JSON.stringify(updatedUsers));
-      message.success('User updated successfully');
-    } else {
-      // Create new user
-      const newUser: UserData = {
-        key: Date.now().toString(),
-        name: values.fullName,
-        email: values.email,
-        role: adminRole ? 'Admin' : 'User',
-        status: 'Active'
-      };
-      existingUsers.push(newUser);
-      localStorage.setItem('workfinUsers', JSON.stringify(existingUsers));
-      message.success('User created successfully');
+    try {
+      if (isEditMode && userId) {
+        // Update existing user (localStorage for now)
+        const existingUsers = JSON.parse(localStorage.getItem('workfinUsers') || '[]') as UserData[];
+        const updatedUsers = existingUsers.map(user =>
+          user.key === userId
+            ? { ...user, name: `${values.firstName} ${values.lastName}`, email: values.email, role: adminRole ? 'Admin' : 'User' }
+            : user
+        );
+        localStorage.setItem('workfinUsers', JSON.stringify(updatedUsers));
+        message.success('User updated successfully');
+        navigate('/users/list');
+      } else {
+        // Create new Workfin Admin - Send invitation via API
+        const invitationData = {
+          email: values.email,
+          first_name: values.firstName,
+          last_name: values.lastName
+        };
+
+        const token = localStorage.getItem('access_token');
+        const response = await axios.post(
+          `${API_BASE_URL}/users/workfin-admin/invite`,
+          invitationData,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (response.data.success) {
+          message.success(response.data.message || 'Invitation sent successfully!');
+          navigate('/users/list');
+        } else {
+          message.warning(response.data.message || 'Invitation created but email not sent');
+          navigate('/users/list');
+        }
+      }
+    } catch (error: any) {
+      console.error('Error creating Workfin Admin:', error);
+      if (error.response?.data?.detail) {
+        message.error(error.response.data.detail);
+      } else {
+        message.error('Failed to send invitation. Please try again.');
+      }
+    } finally {
+      setLoading(false);
     }
-
-    navigate('/users/list');
   };
 
   // Pre-populate form in edit mode
@@ -60,8 +89,14 @@ const WorkFinUserCreate: React.FC = () => {
       const userData = existingUsers.find(user => user.key === userId);
 
       if (userData) {
+        // Split name into first and last name
+        const nameParts = userData.name.trim().split(/\s+/);
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
         form.setFieldsValue({
-          fullName: userData.name,
+          firstName: firstName,
+          lastName: lastName,
           email: userData.email
         });
         setAdminRole(userData.role === 'Admin');
@@ -84,7 +119,7 @@ const WorkFinUserCreate: React.FC = () => {
 
       {/* Page Header */}
       <div className="page-header">
-        <h1 className="page-title">{isEditMode ? 'Edit management user' : 'Create a management user'}</h1>
+        <h1 className="page-title">{isEditMode ? 'Edit workfin admin' : 'Create workfin admin'}</h1>
       </div>
 
       {/* Main Content Card */}
@@ -94,13 +129,23 @@ const WorkFinUserCreate: React.FC = () => {
           layout="vertical"
           onFinish={handleSubmit}
         >
-          <Form.Item
-            label="Full name"
-            name="fullName"
-            rules={[{ required: true, message: 'Please enter full name' }]}
-          >
-            <Input placeholder="Enter full name" className="form-input" />
-          </Form.Item>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <Form.Item
+              label="First name"
+              name="firstName"
+              rules={[{ required: true, message: 'Please enter first name' }]}
+            >
+              <Input placeholder="Enter first name" className="form-input" />
+            </Form.Item>
+
+            <Form.Item
+              label="Last name"
+              name="lastName"
+              rules={[{ required: true, message: 'Please enter last name' }]}
+            >
+              <Input placeholder="Enter last name" className="form-input" />
+            </Form.Item>
+          </div>
 
           <Form.Item
             label="Email address"
@@ -127,7 +172,7 @@ const WorkFinUserCreate: React.FC = () => {
             <Button className="cancel-btn" onClick={handleCancel}>
               Cancel
             </Button>
-            <Button type="primary" htmlType="submit" className="submit-btn">
+            <Button type="primary" htmlType="submit" className="submit-btn" loading={loading}>
               {isEditMode ? 'Update user' : 'Create user'}
             </Button>
           </div>

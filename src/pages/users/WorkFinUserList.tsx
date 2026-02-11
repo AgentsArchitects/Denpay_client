@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Input, Button, Breadcrumb, Tag, Modal, message } from 'antd';
+import { Card, Table, Input, Button, Breadcrumb, Tag, Modal, message, Spin } from 'antd';
 import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import './WorkFinUserList.css';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 interface UserData {
   key: string;
   name: string;
   email: string;
   role: string;
-  status: 'Active' | 'Inactive';
+  status: 'Active' | 'Inactive' | 'Invited';
 }
 
 const { confirm } = Modal;
@@ -19,45 +22,68 @@ const WorkFinUserList: React.FC = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserData[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserData[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Initial default users
-  const defaultUsers: UserData[] = [
-    { key: '1', name: 'Chirag Nathwani', email: 'chirag.nathwani@workfin.co.uk', role: 'Admin', status: 'Active' },
-    { key: '2', name: 'Ajay Lad', email: 'ajay.lad@workfin.co.uk', role: 'Admin', status: 'Active' },
-    { key: '3', name: 'Shoaib Shaikh', email: 'shoaib.shaikh@workfin.co.uk', role: 'Admin', status: 'Active' },
-    { key: '4', name: 'Avinash Choudhary', email: 'avinash.choudhary@workfin.co.uk', role: 'Admin', status: 'Active' },
-    { key: '5', name: 'John Cooper', email: 'john.cooper@workfin.co.uk', role: 'Admin', status: 'Active' },
-  ];
+  // Fetch users from API
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await axios.get(`${API_BASE_URL}/users/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
 
-  // Load users from localStorage on mount
-  useEffect(() => {
-    const storedUsers = localStorage.getItem('workfinUsers');
-    if (storedUsers) {
-      const parsedUsers = JSON.parse(storedUsers);
-      setUsers(parsedUsers);
-      setFilteredUsers(parsedUsers);
-    } else {
-      // Initialize with default users
-      localStorage.setItem('workfinUsers', JSON.stringify(defaultUsers));
-      setUsers(defaultUsers);
-      setFilteredUsers(defaultUsers);
+      const usersData = response.data.map((user: any) => ({
+        key: user.id,
+        name: user.full_name,
+        email: user.email,
+        role: user.role,
+        status: user.status
+      }));
+
+      setUsers(usersData);
+      setFilteredUsers(usersData);
+    } catch (error: any) {
+      console.error('Error fetching users:', error);
+      message.error('Failed to load users');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // Load users on mount
+  useEffect(() => {
+    fetchUsers();
   }, []);
 
   const handleDelete = (record: UserData) => {
+    const actionText = record.status === 'Invited' ? 'Cancel Invitation' : 'Delete User';
+    const contentText = record.status === 'Invited'
+      ? `Are you sure you want to cancel the invitation for ${record.email}?`
+      : `Are you sure you want to delete ${record.name}?`;
+
     confirm({
-      title: 'Delete User',
+      title: actionText,
       icon: <ExclamationCircleOutlined />,
-      content: `Are you sure you want to delete ${record.name}?`,
-      okText: 'Delete',
+      content: contentText,
+      okText: actionText,
       okType: 'danger',
       cancelText: 'Cancel',
-      onOk() {
-        const updatedUsers = users.filter(user => user.key !== record.key);
-        setUsers(updatedUsers);
-        setFilteredUsers(updatedUsers);
-        localStorage.setItem('workfinUsers', JSON.stringify(updatedUsers));
-        message.success('User deleted successfully');
+      async onOk() {
+        try {
+          const token = localStorage.getItem('access_token');
+          await axios.delete(`${API_BASE_URL}/users/${record.key}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          message.success(record.status === 'Invited' ? 'Invitation cancelled' : 'User deleted successfully');
+          fetchUsers(); // Refresh the list
+        } catch (error) {
+          message.error('Failed to delete user');
+        }
       },
     });
   };
@@ -91,11 +117,17 @@ const WorkFinUserList: React.FC = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => (
-        <Tag color="success" className="status-tag">
-          {status}
-        </Tag>
-      ),
+      render: (status: string) => {
+        let color = 'success';
+        if (status === 'Invited') color = 'warning';
+        if (status === 'Inactive') color = 'default';
+
+        return (
+          <Tag color={color} className="status-tag">
+            {status}
+          </Tag>
+        );
+      },
     },
     {
       title: 'Action',
@@ -109,6 +141,7 @@ const WorkFinUserList: React.FC = () => {
             icon={<EditOutlined />}
             className="action-btn edit-btn"
             onClick={() => navigate(`/users/edit/${record.key}`)}
+            disabled={record.status === 'Invited'}
           />
           <Button
             type="text"
@@ -171,6 +204,7 @@ const WorkFinUserList: React.FC = () => {
         <Table
           columns={columns}
           dataSource={filteredUsers}
+          loading={loading}
           pagination={{
             pageSize: 5,
             showSizeChanger: true,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/auth/LoginPage';
+import AcceptInvitation from './pages/auth/AcceptInvitation';
 import Practice360 from './pages/dashboard/Practice360';
 import XeroList from './pages/xero/XeroList';
 import XeroAccounts from './pages/xero/XeroAccounts';
@@ -38,6 +39,7 @@ const App: React.FC = () => {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/auth/accept-invitation" element={<AcceptInvitation />} />
       <Route path="/dashboard" element={
         <DashboardLayout>
           <Practice360 />

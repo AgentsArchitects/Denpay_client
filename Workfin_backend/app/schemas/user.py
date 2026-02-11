@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
 
@@ -52,3 +52,29 @@ class ClientUserResponse(ClientUserBase):
 
     class Config:
         from_attributes = True
+
+
+class WorkfinAdminInviteRequest(BaseModel):
+    email: EmailStr
+    first_name: str
+    last_name: str
+
+
+class InvitationResponse(BaseModel):
+    success: bool
+    message: str
+    invitation_id: Optional[str] = None
+    email_sent: bool
+
+
+class AcceptInvitationRequest(BaseModel):
+    token: str
+    password: str = Field(..., min_length=8, description="Password must be at least 8 characters")
+    confirm_password: str
+
+
+class AcceptInvitationResponse(BaseModel):
+    success: bool
+    message: str
+    user_id: Optional[str] = None
+    email: Optional[str] = None

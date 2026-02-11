@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Card, Select, Table, Tag, Progress, Input, Row, Col } from 'antd';
-import { UserOutlined, CheckCircleOutlined, CloseCircleOutlined, SearchOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
+import { Card, Select, Table, Tag, Progress, Row, Col, Spin, Alert, Button } from 'antd';
+import { UserOutlined, CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import {
   BarChart,
@@ -13,163 +13,100 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import dashboardService from '../../services/dashboardService';
+import type {
+  DashboardData,
+  RecentClient,
+  PracticeSystemOverview,
+  InvitationInfo,
+} from '../../services/dashboardService';
 import './Practice360.css';
 
 const { Option } = Select;
 
-// Mock Data
-const usersByRoleData = [
-  { role: 'Support', count: 4 },
-  { role: 'Admin', count: 22 },
-  { role: 'Finance', count: 5 },
-  { role: 'Manager', count: 8 },
-  { role: 'Manager2', count: 11 },
-  { role: 'Manager3', count: 2 },
-  { role: 'HR', count: 6 },
-  { role: 'Practitioner', count: 1 },
-];
-
-const dailyLoginData = [
-  { date: '12/18/2025', count: 0, hour: 0 },
-  { date: '12/19/2025', count: 0, hour: 0 },
-  { date: '12/20/2025', count: 0, hour: 0 },
-  { date: '12/21/2025', count: 0, hour: 0 },
-  { date: '12/22/2025', count: 0, hour: 0 },
-  { date: '12/23/2025', count: 4, hour: 2 },
-  { date: '12/24/2025', count: 0, hour: 0 },
-  { date: '12/25/2025', count: 0, hour: 0 },
-];
-
-interface RecentUser {
-  key: string;
-  name: string;
-  role: string;
-  lastLogin: string;
-  status: 'Active' | 'Inactive';
-}
-
-const recentUsers: RecentUser[] = [
-  { key: '1', name: 'TS', role: 'Admin, Finance, Hr, Manager', lastLogin: '2025-12-24 16:57', status: 'Active' },
-  { key: '2', name: 'M S', role: 'Manager', lastLogin: '2025-12-24 16:35', status: 'Active' },
-  { key: '3', name: 'Charles Ford', role: 'Admin, Manager, Operation', lastLogin: '2025-12-24 15:53', status: 'Active' },
-  { key: '4', name: 'H M', role: 'Dentist', lastLogin: '2025-12-24 12:59', status: 'Active' },
-  { key: '5', name: 'P T', role: 'Dentist', lastLogin: '2025-12-24 11:49', status: 'Active' },
-  { key: '6', name: 'Peter JL', role: 'Admin, Finance, Hr, Manager', lastLogin: '2025-12-24 11:03', status: 'Active' },
-  { key: '7', name: 'B S', role: 'Dentist', lastLogin: '2025-12-24 10:15', status: 'Active' },
-  { key: '8', name: 'Jenny Verma', role: 'Admin, Finance, Hr, Operation', lastLogin: '2025-12-24 01:17', status: 'Active' },
-];
-
-interface SystemData {
-  key: string;
-  name: string;
-  users: number;
-  nhsData: { status: 'Fail' | 'Success'; time: string };
-  financeSystem: { status: 'Fail' | 'Success'; time: string };
-  pmsConnections: { status: 'Fail' | 'Success'; time: string };
-}
-
-const systemData: SystemData[] = [
-  {
-    key: '1',
-    name: 'R C Dental Surgery',
-    users: 8,
-    nhsData: { status: 'Fail', time: '2025-12-26 00:00' },
-    financeSystem: { status: 'Fail', time: '2025-12-26 00:00' },
-    pmsConnections: { status: 'Fail', time: '2025-12-26 00:00' }
-  },
-  {
-    key: '2',
-    name: 'M B Dental',
-    users: 9,
-    nhsData: { status: 'Fail', time: '2025-12-26 00:00' },
-    financeSystem: { status: 'Fail', time: '2025-12-26 00:00' },
-    pmsConnections: { status: 'Fail', time: '2025-12-26 00:00' }
-  },
-  {
-    key: '3',
-    name: 'Kit Kat Bigskytime Culture',
-    users: 5,
-    nhsData: { status: 'Fail', time: '2025-12-26 00:00' },
-    financeSystem: { status: 'Fail', time: '2025-12-26 00:00' },
-    pmsConnections: { status: 'Fail', time: '2025-12-26 00:00' }
-  },
-  {
-    key: '4',
-    name: 'Skyline Dental Clinic',
-    users: 2,
-    nhsData: { status: 'Fail', time: '2025-12-26 00:00' },
-    financeSystem: { status: 'Fail', time: '2025-12-26 00:00' },
-    pmsConnections: { status: 'Fail', time: '2025-12-26 00:00' }
-  },
-  {
-    key: '5',
-    name: 'Denodent Practice',
-    users: 4,
-    nhsData: { status: 'Fail', time: '2025-12-26 00:00' },
-    financeSystem: { status: 'Fail', time: '2025-12-26 00:00' },
-    pmsConnections: { status: 'Fail', time: '2025-12-26 00:00' }
-  },
-];
-
-interface PermissionData {
-  key: string;
-  name: string;
-  role: string;
-  accessScope: string;
-  modified: string;
-  permissions: string[];
-}
-
-const permissionsData: PermissionData[] = [
-  { key: '1', name: 'A S', role: 'Dentist', accessScope: 'paysheet, practitioner...', modified: 'N/A', permissions: ['ClinicianViewSummary', 'ClinicianViewSummary', 'WorkInvoiceView'] },
-  { key: '2', name: 'CG', role: 'Manager', accessScope: 'clinician, clinicianusers, contract, crosscharge...', modified: 'CG', permissions: ['Add', 'Details', 'Edit', 'List'] },
-  { key: '3', name: 'B S', role: 'Dentist', accessScope: 'paysheet, practitioner...', modified: 'B S', permissions: ['ClinicianViewSummary', 'ClinicianViewSummary', 'List', 'WorkInvoiceView'] },
-  { key: '4', name: 'P F', role: 'Dentist', accessScope: 'paysheet, practitioner...', modified: 'P F', permissions: ['ClinicianViewSummary', 'ClinicianViewSummary', 'WorkInvoiceView'] },
-  { key: '5', name: 'N R', role: 'Dentist', accessScope: 'paysheet, practitioner...', modified: 'N/A', permissions: ['ClinicianViewSummary', 'ClinicianViewSummary'] },
-  { key: '6', name: 'Jerry Hensley', role: 'Admin', accessScope: '-', modified: 'N/A', permissions: [] },
-  { key: '7', name: 'E T', role: 'Dentist', accessScope: 'paysheet, practitioner...', modified: 'N/A', permissions: ['ClinicianViewSummary', 'ClinicianViewSummary', 'List', 'WorkInvoiceView'] },
-  { key: '8', name: 'B J', role: 'Dentist', accessScope: 'paysheet, practitioner...', modified: 'N/A', permissions: ['ClinicianViewSummary', 'ClinicianViewSummary', 'List', 'WorkInvoiceView'] },
-];
-
 const Practice360: React.FC = () => {
   const [selectedClient, setSelectedClient] = useState('all');
   const [loginMetric, setLoginMetric] = useState<'count' | 'hour'>('count');
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const recentUserColumns: ColumnsType<RecentUser> = [
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await dashboardService.getStats(
+        selectedClient === 'all' ? undefined : selectedClient
+      );
+      setDashboardData(data);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [selectedClient]);
+
+  const recentClientColumns: ColumnsType<RecentClient> = [
     {
-      title: 'Name',
+      title: 'Client Name',
       dataIndex: 'name',
       key: 'name',
       render: (text) => <span style={{ fontWeight: 500 }}>{text}</span>,
     },
     {
-      title: 'Role',
-      dataIndex: 'role',
-      key: 'role',
+      title: 'Contact',
+      dataIndex: 'contact_name',
+      key: 'contact_name',
     },
     {
-      title: 'Last Login',
-      dataIndex: 'lastLogin',
-      key: 'lastLogin',
+      title: 'Email',
+      dataIndex: 'contact_email',
+      key: 'contact_email',
+      render: (text) => <span style={{ color: '#6B7280', fontSize: 13 }}>{text}</span>,
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status: 'Active' | 'Inactive') => (
-        <Tag color={status === 'Active' ? 'success' : 'default'} style={{ borderRadius: 6 }}>
-          {status}
-        </Tag>
-      ),
+      render: (status: string) => {
+        const colorMap: Record<string, string> = {
+          'Active': 'success',
+          'Accepted': 'success',
+          'Pending Invite': 'processing',
+          'Expired': 'error',
+          'Inactive': 'default',
+        };
+        return (
+          <Tag color={colorMap[status] || 'default'} style={{ borderRadius: 6 }}>
+            {status}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: 'Onboarded',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      render: (text) => <span style={{ color: '#6B7280', fontSize: 13 }}>{text || 'N/A'}</span>,
     },
   ];
 
-  const systemColumns: ColumnsType<SystemData> = [
+  const systemColumns: ColumnsType<PracticeSystemOverview> = [
     {
-      title: 'Name',
+      title: 'Practice',
       dataIndex: 'name',
       key: 'name',
       render: (text) => <span style={{ fontWeight: 500 }}>{text}</span>,
+    },
+    {
+      title: 'Client',
+      dataIndex: 'tenant_name',
+      key: 'tenant_name',
+      render: (text) => <span style={{ color: '#6B7280', fontSize: 13 }}>{text}</span>,
     },
     {
       title: 'Users',
@@ -183,25 +120,16 @@ const Practice360: React.FC = () => {
       ),
     },
     {
-      title: 'NHS Data',
-      dataIndex: 'nhsData',
-      key: 'nhsData',
+      title: 'Xero / Finance',
+      dataIndex: 'xero_connection',
+      key: 'xero_connection',
       render: (data) => (
         <div>
-          <Tag color="error" icon={<CloseCircleOutlined />} style={{ borderRadius: 6 }}>
-            {data.status}
-          </Tag>
-          <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>{data.time}</div>
-        </div>
-      ),
-    },
-    {
-      title: 'Financial Systems',
-      dataIndex: 'financeSystem',
-      key: 'financeSystem',
-      render: (data) => (
-        <div>
-          <Tag color="error" icon={<CloseCircleOutlined />} style={{ borderRadius: 6 }}>
+          <Tag
+            color={data.status === 'Success' ? 'success' : 'error'}
+            icon={data.status === 'Success' ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+            style={{ borderRadius: 6 }}
+          >
             {data.status}
           </Tag>
           <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>{data.time}</div>
@@ -210,11 +138,15 @@ const Practice360: React.FC = () => {
     },
     {
       title: 'PMS Connections',
-      dataIndex: 'pmsConnections',
-      key: 'pmsConnections',
+      dataIndex: 'pms_connection',
+      key: 'pms_connection',
       render: (data) => (
         <div>
-          <Tag color="error" icon={<CloseCircleOutlined />} style={{ borderRadius: 6 }}>
+          <Tag
+            color={data.status === 'Success' ? 'success' : 'error'}
+            icon={data.status === 'Success' ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+            style={{ borderRadius: 6 }}
+          >
             {data.status}
           </Tag>
           <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>{data.time}</div>
@@ -223,7 +155,7 @@ const Practice360: React.FC = () => {
     },
   ];
 
-  const permissionColumns: ColumnsType<PermissionData> = [
+  const invitationColumns: ColumnsType<InvitationInfo> = [
     {
       title: 'Name',
       dataIndex: 'name',
@@ -231,36 +163,77 @@ const Practice360: React.FC = () => {
       render: (text) => <span style={{ fontWeight: 500 }}>{text}</span>,
     },
     {
-      title: 'Role',
-      dataIndex: 'role',
-      key: 'role',
-    },
-    {
-      title: 'Access Scope',
-      dataIndex: 'accessScope',
-      key: 'accessScope',
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
       render: (text) => <span style={{ color: '#6B7280', fontSize: 13 }}>{text}</span>,
     },
     {
-      title: 'Modified',
-      dataIndex: 'modified',
-      key: 'modified',
-    },
-    {
-      title: 'Permissions',
-      dataIndex: 'permissions',
-      key: 'permissions',
-      render: (permissions: string[]) => (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-          {permissions.map((perm, idx) => (
-            <Tag key={idx} color="purple" style={{ borderRadius: 6, fontSize: 11 }}>
-              {perm}
-            </Tag>
-          ))}
-        </div>
+      title: 'Role',
+      dataIndex: 'role_type',
+      key: 'role_type',
+      render: (text) => (
+        <Tag color="purple" style={{ borderRadius: 6, fontSize: 11 }}>
+          {text}
+        </Tag>
       ),
     },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => {
+        const colorMap: Record<string, string> = {
+          'Accepted': 'success',
+          'Pending': 'processing',
+          'Expired': 'error',
+        };
+        return (
+          <Tag color={colorMap[status] || 'default'} style={{ borderRadius: 6 }}>
+            {status}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: 'Invited',
+      dataIndex: 'invited_at',
+      key: 'invited_at',
+      render: (text) => <span style={{ color: '#6B7280', fontSize: 13 }}>{text || 'N/A'}</span>,
+    },
+    {
+      title: 'Expires',
+      dataIndex: 'expires_at',
+      key: 'expires_at',
+      render: (text) => <span style={{ color: '#6B7280', fontSize: 13 }}>{text || 'N/A'}</span>,
+    },
   ];
+
+  if (loading && !dashboardData) {
+    return (
+      <div className="practice360-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <Spin size="large" tip="Loading dashboard..." />
+      </div>
+    );
+  }
+
+  if (error && !dashboardData) {
+    return (
+      <div className="practice360-container">
+        <Alert
+          type="error"
+          message="Dashboard Error"
+          description={error}
+          action={<Button icon={<ReloadOutlined />} onClick={fetchDashboardData}>Retry</Button>}
+          showIcon
+        />
+      </div>
+    );
+  }
+
+  const stats = dashboardData?.client_stats;
+  const xeroPct = dashboardData?.system_overview_summary.xero_connected_pct ?? 0;
+  const pmsPct = dashboardData?.system_overview_summary.pms_connected_pct ?? 0;
 
   return (
     <div className="practice360-container">
@@ -270,26 +243,30 @@ const Practice360: React.FC = () => {
         <Select
           value={selectedClient}
           onChange={setSelectedClient}
-          style={{ width: 200 }}
+          style={{ width: 250 }}
           size="large"
+          loading={loading}
         >
           <Option value="all">All Clients</Option>
-          <Option value="client1">Client 1</Option>
-          <Option value="client2">Client 2</Option>
+          {dashboardData?.clients.map((c) => (
+            <Option key={c.tenant_id} value={c.tenant_id}>
+              {c.legal_trading_name}
+            </Option>
+          ))}
         </Select>
       </div>
 
-      {/* User Management Summary */}
-      <Card className="summary-card" title="User Management Summary">
+      {/* Client Management Summary */}
+      <Card className="summary-card" title="Client Management Summary">
         <Row gutter={24}>
           <Col xs={24} sm={8}>
             <div className="stat-box">
               <div className="stat-icon" style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.2))' }}>
-                <UserOutlined style={{ color: '#6366F1', fontSize: 24 }} />
+                <TeamOutlined style={{ color: '#6366F1', fontSize: 24 }} />
               </div>
               <div>
-                <div className="stat-label">Total Users</div>
-                <div className="stat-value">40</div>
+                <div className="stat-label">Total Clients</div>
+                <div className="stat-value">{stats?.total_clients ?? 0}</div>
               </div>
             </div>
           </Col>
@@ -300,7 +277,7 @@ const Practice360: React.FC = () => {
               </div>
               <div>
                 <div className="stat-label">Active</div>
-                <div className="stat-value" style={{ color: '#22C55E' }}>39</div>
+                <div className="stat-value" style={{ color: '#22C55E' }}>{stats?.active_clients ?? 0}</div>
               </div>
             </div>
           </Col>
@@ -311,7 +288,7 @@ const Practice360: React.FC = () => {
               </div>
               <div>
                 <div className="stat-label">Inactive</div>
-                <div className="stat-value" style={{ color: '#EF4444' }}>1</div>
+                <div className="stat-value" style={{ color: '#EF4444' }}>{stats?.inactive_clients ?? 0}</div>
               </div>
             </div>
           </Col>
@@ -323,7 +300,7 @@ const Practice360: React.FC = () => {
         <Col xs={24} lg={12}>
           <Card title="Users By Role" className="chart-card">
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={usersByRoleData}>
+              <BarChart data={dashboardData?.users_by_role || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                 <XAxis dataKey="role" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
@@ -349,7 +326,7 @@ const Practice360: React.FC = () => {
             }
           >
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={dailyLoginData}>
+              <LineChart data={dashboardData?.daily_login_activity || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
@@ -361,23 +338,27 @@ const Practice360: React.FC = () => {
         </Col>
       </Row>
 
-      {/* Recent User Activity */}
+      {/* Recent Client Onboarding */}
       <Card
-        title="Recent User Activity"
+        title="Recent Client Onboarding"
         className="table-card"
         extra={
-          <Input
-            placeholder="Search..."
-            prefix={<SearchOutlined style={{ color: '#9CA3AF' }} />}
-            style={{ width: 250 }}
-          />
+          <Button
+            icon={<ReloadOutlined />}
+            size="small"
+            onClick={fetchDashboardData}
+            loading={loading}
+          >
+            Refresh
+          </Button>
         }
       >
         <Table
-          columns={recentUserColumns}
-          dataSource={recentUsers}
+          columns={recentClientColumns}
+          dataSource={dashboardData?.recent_clients || []}
           pagination={{ pageSize: 8, showSizeChanger: true, showTotal: (total, range) => `${range[0]}-${range[1]} of ${total}` }}
           size="middle"
+          rowKey="key"
         />
       </Card>
 
@@ -385,46 +366,27 @@ const Practice360: React.FC = () => {
       <Card
         title="System Overview"
         className="table-card"
-        extra={
-          <Input
-            placeholder="Search..."
-            prefix={<SearchOutlined style={{ color: '#9CA3AF' }} />}
-            style={{ width: 250 }}
-          />
-        }
       >
         <Row gutter={24} className="system-progress-row">
-          <Col xs={24} md={8}>
+          <Col xs={24} md={12}>
             <div className="progress-circle-container">
               <Progress
                 type="circle"
-                percent={100}
-                strokeColor="#EF4444"
-                format={() => '100%'}
+                percent={xeroPct}
+                strokeColor={xeroPct > 50 ? '#22C55E' : '#EF4444'}
+                format={() => `${xeroPct}%`}
                 width={120}
               />
-              <div className="progress-label">NHS Data</div>
+              <div className="progress-label">Xero / Finance</div>
             </div>
           </Col>
-          <Col xs={24} md={8}>
+          <Col xs={24} md={12}>
             <div className="progress-circle-container">
               <Progress
                 type="circle"
-                percent={100}
-                strokeColor="#EF4444"
-                format={() => '100%'}
-                width={120}
-              />
-              <div className="progress-label">Finance System</div>
-            </div>
-          </Col>
-          <Col xs={24} md={8}>
-            <div className="progress-circle-container">
-              <Progress
-                type="circle"
-                percent={100}
-                strokeColor="#EF4444"
-                format={() => '100%'}
+                percent={pmsPct}
+                strokeColor={pmsPct > 50 ? '#22C55E' : '#EF4444'}
+                format={() => `${pmsPct}%`}
                 width={120}
               />
               <div className="progress-label">PMS Connections</div>
@@ -433,29 +395,24 @@ const Practice360: React.FC = () => {
         </Row>
         <Table
           columns={systemColumns}
-          dataSource={systemData}
+          dataSource={dashboardData?.practice_system_overview || []}
           pagination={{ pageSize: 5, showTotal: (total, range) => `${range[0]}-${range[1]} of ${total}` }}
           size="middle"
+          rowKey="key"
         />
       </Card>
 
-      {/* Permissions */}
+      {/* Invitations */}
       <Card
-        title="Permissions"
+        title="Invitations"
         className="table-card"
-        extra={
-          <Input
-            placeholder="Search..."
-            prefix={<SearchOutlined style={{ color: '#9CA3AF' }} />}
-            style={{ width: 250 }}
-          />
-        }
       >
         <Table
-          columns={permissionColumns}
-          dataSource={permissionsData}
+          columns={invitationColumns}
+          dataSource={dashboardData?.invitations || []}
           pagination={{ pageSize: 8, showTotal: (total, range) => `${range[0]}-${range[1]} of ${total}` }}
           size="middle"
+          rowKey="key"
         />
       </Card>
     </div>

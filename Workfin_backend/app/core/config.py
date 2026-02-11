@@ -11,13 +11,24 @@ class Settings(BaseSettings):
     # CORS Settings
     CORS_ORIGINS: Union[str, List[str]] = "https://api-uat-uk-workfin-02.azurewebsites.net/"
 
-    # JWT Settings
+    # JWT Settings (legacy - kept for backward compatibility)
     SECRET_KEY: str = "your-secret-key-change-this-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # JWT Authentication Configuration (new - used by auth_utils.py)
+    JWT_SECRET_KEY: str = "your-secret-key-change-this-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
     # Database Settings
     DATABASE_URL: str = ""
+
+    # SendGrid Email Settings
+    SENDGRID_API_KEY: str = ""
+    SENDGRID_FROM_EMAIL: str = "noreply@workfin.co.uk"
+    SENDGRID_FROM_NAME: str = "WorkFin"
+    FRONTEND_URL: str = "http://localhost:5173"
 
     # Xero Settings
     XERO_CLIENT_ID: str = ""

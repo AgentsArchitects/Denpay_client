@@ -70,7 +70,7 @@ const ClientOnboardingCreate: React.FC = () => {
         await form.validateFields(['type', 'tradingName', 'addressLine1', 'city', 'postCode']);
       } else if (currentTabIndex === 2) {
         // Tab 2: Contact Information - validate required fields
-        await contactForm.validateFields(['phoneNumber', 'emailId', 'adminUserFullName', 'adminUserEmail']);
+        await contactForm.validateFields(['phoneNumber', 'emailId', 'firstName', 'lastName']);
       }
       // Other tabs don't have mandatory fields, so we don't need to validate them
 
@@ -171,8 +171,8 @@ const ClientOnboardingCreate: React.FC = () => {
         phone: contactInfo.phoneNumber,
         email: contactInfo.emailId,
         admin_user: {
-          name: contactInfo.adminUserFullName,
-          email: contactInfo.adminUserEmail
+          name: `${contactInfo.firstName} ${contactInfo.lastName}`.trim(),
+          email: contactInfo.emailId
         },
 
         // Tab 3: License Information
@@ -454,11 +454,17 @@ const ClientOnboardingCreate: React.FC = () => {
           // Get admin user data from the first user (ClientAdmin)
           const adminUser = clientData.users && clientData.users.length > 0 ? clientData.users[0] : null;
 
+          // Split admin user name into first and last name
+          const adminUserName = adminUser?.name || '';
+          const nameParts = adminUserName.trim().split(/\s+/);
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.slice(1).join(' ') || '';
+
           const contactData = {
             phoneNumber: clientData.contact_phone || '',
             emailId: clientData.contact_email || '',
-            adminUserFullName: adminUser?.name || '',
-            adminUserEmail: adminUser?.email || '',
+            firstName: firstName,
+            lastName: lastName,
           };
 
           const licenseData = {
@@ -768,23 +774,20 @@ const ClientOnboardingCreate: React.FC = () => {
             <div className="form-row">
               <div className="form-col">
                 <Form.Item
-                  label="Admin User Full Name"
-                  name="adminUserFullName"
-                  rules={[{ required: true, message: 'Please enter admin user full name' }]}
+                  label="First Name"
+                  name="firstName"
+                  rules={[{ required: true, message: 'Please enter first name' }]}
                 >
-                  <Input placeholder="Enter admin user full name" />
+                  <Input placeholder="Enter first name" />
                 </Form.Item>
               </div>
               <div className="form-col">
                 <Form.Item
-                  label="Admin User Email"
-                  name="adminUserEmail"
-                  rules={[
-                    { required: true, message: 'Please enter admin user email' },
-                    { type: 'email', message: 'Please enter a valid email' }
-                  ]}
+                  label="Last Name"
+                  name="lastName"
+                  rules={[{ required: true, message: 'Please enter last name' }]}
                 >
-                  <Input placeholder="Enter admin user email" />
+                  <Input placeholder="Enter last name" />
                 </Form.Item>
               </div>
             </div>

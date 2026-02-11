@@ -40,9 +40,27 @@ class ClientAddressResponse(ClientAddressBase):
 
 
 class AdminUserCreate(BaseModel):
-    """Admin user to be created with the client"""
-    name: str = Field(..., description="Full name of admin user")
+    """Admin user to be created with the client (Contact Information)"""
     email: EmailStr = Field(..., description="Email address of admin user")
+
+    # Accept either combined name OR separate first/last names
+    name: Optional[str] = Field(None, description="Full name (backward compatibility)")
+    first_name: Optional[str] = Field(None, description="First name of admin user")
+    last_name: Optional[str] = Field(None, description="Last name of admin user")
+    phone: Optional[str] = Field(None, description="Phone number of admin user")
+
+    def model_post_init(self, __context) -> None:
+        """Split name into first_name and last_name if provided as single field"""
+        if self.name and not self.first_name and not self.last_name:
+            # Split name into first and last
+            parts = self.name.strip().split(maxsplit=1)
+            self.first_name = parts[0] if len(parts) > 0 else ""
+            self.last_name = parts[1] if len(parts) > 1 else ""
+        elif self.first_name and self.last_name and not self.name:
+            # Combine first and last into name
+            self.name = f"{self.first_name} {self.last_name}".strip()
+        elif not self.name and not self.first_name:
+            raise ValueError("Either 'name' or 'first_name' and 'last_name' must be provided")
 
 
 class UserResponse(BaseModel):
@@ -128,6 +146,8 @@ class ClientBase(BaseModel):
     # Tab 2: Contact Information
     contact_phone: str = Field(..., alias="phone", description="Primary contact phone")
     contact_email: EmailStr = Field(..., alias="email", description="Primary contact email")
+    contact_first_name: Optional[str] = Field(None, description="Primary contact first name")
+    contact_last_name: Optional[str] = Field(None, description="Primary contact last name")
 
     # Tab 3: License Information
     accounting_system: Optional[str] = Field(None, description="Accounting system: xero, sage")

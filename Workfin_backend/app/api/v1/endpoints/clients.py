@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException, status, Depends
-from typing import List
+from fastapi import APIRouter, HTTPException, status, Depends, Request
+from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
 from app.schemas.client import (
     ClientCreate,
@@ -20,6 +20,13 @@ from app.db.models import (
     ClientFYEndPeriod
 )
 from datetime import datetime
+import sys
+import os
+
+# Add auth modules to path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+from auth_utils import create_invitation, get_current_user_from_token
+from app.services.email_service import email_service
 
 router = APIRouter()
 
@@ -39,25 +46,53 @@ DEFAULT_ADJUSTMENT_TYPES = [
 
 @router.get("/", response_model=List[ClientListItem])
 async def get_clients(db: AsyncSession = Depends(get_db)):
-    """Get all clients from database"""
+    """Get all clients from database with invitation status"""
     try:
+        from auth_models import AuthUser, Invitation
+
         result = await db.execute(select(Client))
         clients = result.scalars().all()
 
-        return [
-            ClientListItem(
-                id=client.tenant_id,
-                tenant_id=client.tenant_id,
-                legal_trading_name=client.legal_trading_name,
-                workfin_reference=client.workfin_reference,
-                status=client.status,
-                contact_email=client.contact_email,
-                contact_phone=client.contact_phone,
-                client_type=client.client_type,
-                created_at=client.created_at
+        # Build client list with invitation status
+        client_list = []
+        for client in clients:
+            # Check if there's an accepted user for this client's email
+            user_result = await db.execute(
+                select(AuthUser).where(AuthUser.email == client.contact_email)
             )
-            for client in clients
-        ]
+            user_exists = user_result.scalar_one_or_none() is not None
+
+            # Check if there's a pending invitation
+            invitation_result = await db.execute(
+                select(Invitation).where(
+                    Invitation.email == client.contact_email,
+                    Invitation.is_used == False,
+                    Invitation.role_type == "CLIENT_ADMIN"
+                )
+            )
+            has_pending_invitation = invitation_result.scalar_one_or_none() is not None
+
+            # Determine status
+            if not user_exists and has_pending_invitation:
+                status = "Pending Invite"
+            else:
+                status = client.status
+
+            client_list.append(
+                ClientListItem(
+                    id=client.tenant_id,
+                    tenant_id=client.tenant_id,
+                    legal_trading_name=client.legal_trading_name,
+                    workfin_reference=client.workfin_reference,
+                    status=status,
+                    contact_email=client.contact_email,
+                    contact_phone=client.contact_phone,
+                    client_type=client.client_type,
+                    created_at=client.created_at
+                )
+            )
+
+        return client_list
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -101,7 +136,11 @@ async def get_client(client_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/", response_model=ClientResponse, status_code=status.HTTP_201_CREATED)
-async def create_client(client: ClientCreate, db: AsyncSession = Depends(get_db)):
+async def create_client(
+    client: ClientCreate,
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
     """Create a new client with all related data (onboarding form submission)"""
     try:
         # Step 1: Create the client
@@ -111,6 +150,8 @@ async def create_client(client: ClientCreate, db: AsyncSession = Depends(get_db)
             workfin_reference=client.workfin_reference,
             contact_email=client.contact_email,
             contact_phone=client.contact_phone,
+            contact_first_name=client.admin_user.first_name,
+            contact_last_name=client.admin_user.last_name,
             status="Active",
 
             # Branding (Tab 1)
@@ -179,6 +220,43 @@ async def create_client(client: ClientCreate, db: AsyncSession = Depends(get_db)
         )
         db.add(admin_role)
 
+        # Step 4.5: Create invitation and send email
+        # Extract current user ID from authorization token (required)
+        authorization = request.headers.get("authorization")
+        try:
+            invited_by_user_id = get_current_user_from_token(authorization)
+        except Exception as auth_err:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Authentication failed: {str(auth_err)}"
+            )
+
+        try:
+            # Create invitation token with first_name and last_name
+            invitation_token = await create_invitation(
+                session=db,
+                email=client.admin_user.email,
+                role_type="CLIENT_ADMIN",
+                invited_by_user_id=invited_by_user_id,
+                first_name=client.admin_user.first_name,
+                last_name=client.admin_user.last_name,
+                tenant_id=new_client.tenant_id
+            )
+
+            # Send invitation email via SendGrid
+            email_sent = await email_service.send_client_invitation(
+                to_email=client.admin_user.email,
+                first_name=client.admin_user.first_name,
+                last_name=client.admin_user.last_name,
+                invitation_token=invitation_token,
+                client_name=client.legal_trading_name
+            )
+
+            pass  # email_sent status logged by email service
+
+        except Exception:
+            pass  # Don't fail client creation if email fails
+
         # Step 5: Create adjustment types (use provided or defaults)
         adjustment_types_to_create = client.adjustment_types if client.adjustment_types else [
             {"name": name} for name in DEFAULT_ADJUSTMENT_TYPES
@@ -231,6 +309,9 @@ async def create_client(client: ClientCreate, db: AsyncSession = Depends(get_db)
 
         return ClientResponse.from_orm(client_with_relations)
 
+    except HTTPException:
+        await db.rollback()
+        raise
     except Exception as e:
         await db.rollback()
         raise HTTPException(

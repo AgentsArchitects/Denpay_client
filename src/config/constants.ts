@@ -86,8 +86,12 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localho
 export const API_ENDPOINTS = {
   // Authentication
   AUTH: {
-    LOGIN: '/auth/login/',
-    LOGOUT: '/auth/logout/',
+    LOGIN: '/auth/login',
+    LOGOUT: '/auth/logout',
+  },
+  // Dashboard
+  DASHBOARD: {
+    STATS: '/dashboard/stats',
   },
   // Clients
   CLIENTS: {

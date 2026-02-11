@@ -48,6 +48,8 @@ class Client(Base):
     workfin_reference = Column(String(100), nullable=False, unique=True)
     contact_email = Column(String(255), nullable=False)
     contact_phone = Column(String(50), nullable=False)
+    contact_first_name = Column(String(100), nullable=True)
+    contact_last_name = Column(String(100), nullable=True)
     status = Column(ENUM('Active', 'Inactive', name='entity_status', schema=SCHEMA, create_type=False), nullable=False, default="Active")
 
     # Branding & Identity (Tab 1)
