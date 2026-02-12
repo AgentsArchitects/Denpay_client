@@ -13,6 +13,12 @@ interface UserData {
   name: string;
   email: string;
   role: string;
+  tenant_id: string;
+  tenant_name: string;
+  practice_id: string;
+  practice_name: string;
+  clinician_id: string;
+  clinician_name: string;
   status: 'Active' | 'Inactive' | 'Invited';
 }
 
@@ -51,6 +57,12 @@ const WorkFinUserList: React.FC = () => {
         name: user.full_name,
         email: user.email,
         role: user.role,
+        tenant_id: user.tenant_id || '-',
+        tenant_name: user.tenant_name || '-',
+        practice_id: user.practice_id || '-',
+        practice_name: user.practice_name || '-',
+        clinician_id: user.clinician_id || '-',
+        clinician_name: user.clinician_name || '-',
         status: user.status
       }));
 
@@ -128,6 +140,19 @@ const WorkFinUserList: React.FC = () => {
     applyFilters(searchText, value);
   };
 
+  // Render stacked Name/ID cell (name on top, ID below)
+  const renderIdNameCell = (id: string, name: string) => {
+    if (id === '-' && name === '-') {
+      return <span style={{ color: '#9CA3AF' }}>-</span>;
+    }
+    return (
+      <div>
+        {name !== '-' && <div className="cell-name">{name}</div>}
+        <div className="cell-id">{id}</div>
+      </div>
+    );
+  };
+
   const columns: ColumnsType<UserData> = [
     {
       title: 'Name',
@@ -144,6 +169,21 @@ const WorkFinUserList: React.FC = () => {
       title: 'Roles',
       dataIndex: 'role',
       key: 'role',
+    },
+    {
+      title: 'Tenant ID / Name',
+      key: 'tenant',
+      render: (_, record) => renderIdNameCell(record.tenant_id, record.tenant_name),
+    },
+    {
+      title: 'Practice ID / Name',
+      key: 'practice',
+      render: (_, record) => renderIdNameCell(record.practice_id, record.practice_name),
+    },
+    {
+      title: 'Clinician ID / Name',
+      key: 'clinician',
+      render: (_, record) => renderIdNameCell(record.clinician_id, record.clinician_name),
     },
     {
       title: 'Status',

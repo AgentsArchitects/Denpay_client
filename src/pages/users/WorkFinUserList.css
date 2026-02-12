@@ -184,6 +184,19 @@
   color: #6B7280;
 }
 
+/* Stacked Name / ID cells */
+.cell-name {
+  font-weight: 500;
+  color: #1F2937;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+.cell-id {
+  font-size: 12px;
+  color: #6B7280;
+}
+
 .status-tag {
   border-radius: 12px;
   padding: 2px 12px;

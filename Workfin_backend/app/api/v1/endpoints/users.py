@@ -71,6 +71,9 @@ async def get_users(
         # Extract current user ID from authorization token
         current_user_id = get_current_user_from_token(authorization)
 
+        from auth_models import Invitation
+        from app.db.models import Client, Practice, Clinician
+
         # Fetch ALL active users (no role filter)
         result = await db.execute(
             select(AuthUser, UserRole).join(
@@ -82,13 +85,59 @@ async def get_users(
         users_data = result.all()
 
         # Fetch ALL pending invitations (no role filter), ordered by newest first
-        from auth_models import Invitation
         result = await db.execute(
             select(Invitation).where(
                 Invitation.is_used == False
             ).order_by(desc(Invitation.invited_at))
         )
         pending_invitations = result.scalars().all()
+
+        # Collect all unique IDs for batch lookup
+        tenant_ids = set()
+        practice_ids = set()
+        clinician_ids = set()
+
+        for user, role in users_data:
+            if role.tenant_id:
+                tenant_ids.add(role.tenant_id)
+            if role.practice_id:
+                practice_ids.add(role.practice_id)
+            if role.clinician_id:
+                clinician_ids.add(role.clinician_id)
+
+        for invitation in pending_invitations:
+            if invitation.tenant_id:
+                tenant_ids.add(invitation.tenant_id)
+            if invitation.practice_id:
+                practice_ids.add(invitation.practice_id)
+
+        # Batch fetch names from lookup tables
+        tenant_names = {}
+        if tenant_ids:
+            result = await db.execute(
+                select(Client.tenant_id, Client.legal_trading_name).where(
+                    Client.tenant_id.in_(list(tenant_ids))
+                )
+            )
+            tenant_names = {row.tenant_id: row.legal_trading_name for row in result.all()}
+
+        practice_names = {}
+        if practice_ids:
+            result = await db.execute(
+                select(Practice.practice_id, Practice.name).where(
+                    Practice.practice_id.in_(list(practice_ids))
+                )
+            )
+            practice_names = {row.practice_id: row.name for row in result.all()}
+
+        clinician_names = {}
+        if clinician_ids:
+            result = await db.execute(
+                select(Clinician.clinician_id, Clinician.first_name, Clinician.last_name).where(
+                    Clinician.clinician_id.in_(list(clinician_ids))
+                )
+            )
+            clinician_names = {row.clinician_id: f"{row.first_name} {row.last_name}".strip() for row in result.all()}
 
         # Format response
         users_list = []
@@ -102,6 +151,12 @@ async def get_users(
                 "full_name": f"{user.first_name} {user.last_name}".strip() or "N/A",
                 "email": user.email,
                 "role": _format_role_name(role.role_type),
+                "tenant_id": role.tenant_id or "-",
+                "tenant_name": tenant_names.get(role.tenant_id, "-") if role.tenant_id else "-",
+                "practice_id": role.practice_id or "-",
+                "practice_name": practice_names.get(role.practice_id, "-") if role.practice_id else "-",
+                "clinician_id": role.clinician_id or "-",
+                "clinician_name": clinician_names.get(role.clinician_id, "-") if role.clinician_id else "-",
                 "status": "Active" if user.is_active else "Inactive",
                 "created_at": user.created_at,
                 "updated_at": user.updated_at
@@ -128,6 +183,12 @@ async def get_users(
                 "full_name": f"{invitation.first_name} {invitation.last_name}".strip() or "N/A",
                 "email": invitation.email,
                 "role": _format_role_name(invitation.role_type),
+                "tenant_id": invitation.tenant_id or "-",
+                "tenant_name": tenant_names.get(invitation.tenant_id, "-") if invitation.tenant_id else "-",
+                "practice_id": invitation.practice_id or "-",
+                "practice_name": practice_names.get(invitation.practice_id, "-") if invitation.practice_id else "-",
+                "clinician_id": getattr(invitation, 'clinician_id', None) or "-",
+                "clinician_name": "-",
                 "status": "Invited",
                 "created_at": invitation.invited_at,
                 "updated_at": invitation.invited_at

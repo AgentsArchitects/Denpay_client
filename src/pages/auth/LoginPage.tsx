@@ -133,7 +133,6 @@ const LoginPage: React.FC = () => {
                 { required: true, message: 'Please enter your email' },
                 { type: 'email', message: 'Please enter a valid email' },
               ]}
-              initialValue="yash.patel@workfin.co.uk"
             >
               <Input
                 placeholder="your-email@workfin.com"
@@ -146,7 +145,6 @@ const LoginPage: React.FC = () => {
               label="Password"
               name="password"
               rules={[{ required: true, message: 'Please enter your password' }]}
-              initialValue="Admin@123"
             >
               <Input.Password
                 placeholder="••••••••"
