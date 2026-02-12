@@ -46,8 +46,19 @@ const LoginPage: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Login error:', err);
-      const errorMessage = err.message || 'Invalid email or password';
-      setError(errorMessage);
+      const errorMessage = err.message || err.response?.data?.detail || '';
+
+      // Non-WorkFin users: show alert and redirect to Client Portal
+      if (err.status === 403 || errorMessage === 'Login to Client Portal') {
+        setError('This portal is for WorkFin Admin users only. Redirecting you to the Client Portal...');
+        setLoading(false);
+        window.setTimeout(() => {
+          window.location.replace('https://api-uat-uk-workfin-03.azurewebsites.net');
+        }, 2000);
+        return;
+      }
+
+      setError(errorMessage || 'Invalid email or password');
     } finally {
       setLoading(false);
     }

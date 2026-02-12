@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Input, Button, Breadcrumb, Tag, Modal, message, Spin } from 'antd';
-import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { Card, Table, Input, Button, Breadcrumb, Tag, Modal, message, Spin, Select } from 'antd';
+import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, FilterOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -18,11 +18,22 @@ interface UserData {
 
 const { confirm } = Modal;
 
+const ALL_ROLES = [
+  'WorkFin Admin',
+  'Client Admin',
+  'Practice Manager',
+  'Practice Manager Denpay',
+  'Finance Operations',
+  'Clinician',
+];
+
 const WorkFinUserList: React.FC = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserData[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [selectedRole, setSelectedRole] = useState<string>('all');
 
   // Fetch users from API
   const fetchUsers = async () => {
@@ -88,12 +99,33 @@ const WorkFinUserList: React.FC = () => {
     });
   };
 
-  const handleSearch = (value: string) => {
-    const filtered = users.filter(user =>
-      user.name.toLowerCase().includes(value.toLowerCase()) ||
-      user.email.toLowerCase().includes(value.toLowerCase())
-    );
+  // Combined filter: search text + role dropdown
+  const applyFilters = (search: string, role: string) => {
+    let filtered = users;
+
+    if (role !== 'all') {
+      filtered = filtered.filter(user => user.role === role);
+    }
+
+    if (search) {
+      const lower = search.toLowerCase();
+      filtered = filtered.filter(user =>
+        user.name.toLowerCase().includes(lower) ||
+        user.email.toLowerCase().includes(lower)
+      );
+    }
+
     setFilteredUsers(filtered);
+  };
+
+  const handleSearch = (value: string) => {
+    setSearchText(value);
+    applyFilters(value, selectedRole);
+  };
+
+  const handleRoleFilter = (value: string) => {
+    setSelectedRole(value);
+    applyFilters(searchText, value);
   };
 
   const columns: ColumnsType<UserData> = [
@@ -190,14 +222,25 @@ const WorkFinUserList: React.FC = () => {
           <span className="tab-item active">All <span className="tab-count">{filteredUsers.length}</span></span>
         </div>
 
-        {/* Search */}
-        <div className="search-wrapper">
+        {/* Search & Filter */}
+        <div className="search-filter-wrapper">
           <Input
             placeholder="Search..."
             prefix={<SearchOutlined style={{ color: '#9CA3AF' }} />}
             className="search-input"
             onChange={(e) => handleSearch(e.target.value)}
           />
+          <Select
+            value={selectedRole}
+            onChange={handleRoleFilter}
+            className="role-filter-select"
+            suffixIcon={<FilterOutlined />}
+          >
+            <Select.Option value="all">All Roles</Select.Option>
+            {ALL_ROLES.map(role => (
+              <Select.Option key={role} value={role}>{role}</Select.Option>
+            ))}
+          </Select>
         </div>
 
         {/* Table */}

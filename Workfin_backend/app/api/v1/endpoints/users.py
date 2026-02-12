@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Header
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func, desc
 from app.schemas.user import UserCreate, UserUpdate, UserResponse, WorkfinAdminInviteRequest, InvitationResponse
 from app.db.database import get_db
 from datetime import datetime
@@ -43,42 +43,50 @@ MOCK_USERS = {
 }
 
 
+def _format_role_name(role_type: str) -> str:
+    """Convert role_type like WORKFIN_ADMIN to 'WorkFin Admin'"""
+    role_map = {
+        "WORKFIN_ADMIN": "WorkFin Admin",
+        "CLIENT_ADMIN": "Client Admin",
+        "PRACTICE_MANAGER": "Practice Manager",
+        "PRACTICE_MANAGER_DENPAY": "Practice Manager Denpay",
+        "FINANCE_OPERATIONS": "Finance Operations",
+        "CLINICIAN": "Clinician",
+    }
+    return role_map.get(role_type, role_type.replace("_", " ").title())
+
+
 @router.get("/")
 async def get_users(
     db: AsyncSession = Depends(get_db),
     authorization: Optional[str] = Header(None)
 ):
     """
-    Get all Workfin Admin users including:
-    - Active users (from auth.users)
+    Get all users including:
+    - Active users of all roles (from auth.users + auth.user_roles)
     - Pending invitations (from auth.invitations where is_used = false)
+    - Deduplicates invitations: same email shows only the latest pending invite
     """
     try:
         # Extract current user ID from authorization token
         current_user_id = get_current_user_from_token(authorization)
 
-        # Fetch all Workfin Admin users
+        # Fetch ALL active users (no role filter)
         result = await db.execute(
             select(AuthUser, UserRole).join(
                 UserRole, AuthUser.user_id == UserRole.user_id
             ).where(
-                and_(
-                    UserRole.role_type == "WORKFIN_ADMIN",
-                    UserRole.is_active == True
-                )
+                UserRole.is_active == True
             )
         )
         users_data = result.all()
 
-        # Fetch pending invitations for Workfin Admins
+        # Fetch ALL pending invitations (no role filter), ordered by newest first
         from auth_models import Invitation
         result = await db.execute(
             select(Invitation).where(
-                and_(
-                    Invitation.role_type == "WORKFIN_ADMIN",
-                    Invitation.is_used == False
-                )
-            )
+                Invitation.is_used == False
+            ).order_by(desc(Invitation.invited_at))
         )
         pending_invitations = result.scalars().all()
 
@@ -88,28 +96,38 @@ async def get_users(
         # Add active users
         active_user_emails = set()
         for user, role in users_data:
-            active_user_emails.add(user.email.lower())  # Track active user emails
+            active_user_emails.add(user.email.lower())
             users_list.append({
                 "id": user.user_id,
                 "full_name": f"{user.first_name} {user.last_name}".strip() or "N/A",
                 "email": user.email,
-                "role": "Admin",
+                "role": _format_role_name(role.role_type),
                 "status": "Active" if user.is_active else "Inactive",
                 "created_at": user.created_at,
                 "updated_at": user.updated_at
             })
 
-        # Add pending invitations (but only if user hasn't been created yet)
+        # Add pending invitations
+        # - Skip if user with this email already accepted (exists in auth.users)
+        # - Deduplicate: only show the latest invitation per email
+        seen_invitation_emails = set()
         for invitation in pending_invitations:
-            # Skip if user with this email already exists
-            if invitation.email.lower() in active_user_emails:
+            email_lower = invitation.email.lower()
+
+            # Skip if user already accepted and is active
+            if email_lower in active_user_emails:
                 continue
+
+            # Skip duplicate invitations for same email (keep only the latest)
+            if email_lower in seen_invitation_emails:
+                continue
+            seen_invitation_emails.add(email_lower)
 
             users_list.append({
                 "id": invitation.invitation_id,
                 "full_name": f"{invitation.first_name} {invitation.last_name}".strip() or "N/A",
                 "email": invitation.email,
-                "role": "Admin",
+                "role": _format_role_name(invitation.role_type),
                 "status": "Invited",
                 "created_at": invitation.invited_at,
                 "updated_at": invitation.invited_at

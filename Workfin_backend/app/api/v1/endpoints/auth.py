@@ -169,6 +169,14 @@ async def login(
             detail="User has no active roles assigned"
         )
 
+    # Only WorkFin Admin users can log in to this portal
+    is_workfin_admin = any(role.role_type == "WORKFIN_ADMIN" for role in user_roles)
+    if not is_workfin_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Login to Client Portal"
+        )
+
     # Get permissions (pass user_roles to avoid fetching again)
     permissions = await get_user_permissions(session, user_roles=user_roles)
 
