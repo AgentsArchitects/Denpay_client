@@ -1,0 +1,209 @@
+import React, { useState, useEffect } from 'react';
+import { Card, Table, Input, Select, Breadcrumb, Tag } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
+import { Link } from 'react-router-dom';
+import xeroService, { XeroBankTransferData, XeroTenant } from '../../services/xeroService';
+import './XeroList.css';
+
+const { Option } = Select;
+
+const XeroBankTransfers: React.FC = () => {
+  const shortId = (id: string) => id.replace(/-/g, '').substring(0, 8).toUpperCase();
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<XeroBankTransferData[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [tenants, setTenants] = useState<XeroTenant[]>([]);
+  const [selectedTenant, setSelectedTenant] = useState<string>('');
+  const [searchText, setSearchText] = useState('');
+
+  useEffect(() => {
+    fetchTenants();
+  }, []);
+
+  useEffect(() => {
+    fetchBankTransfers();
+  }, [selectedTenant, page, pageSize]);
+
+  const fetchTenants = async () => {
+    try {
+      const tenantList = await xeroService.getTenants();
+      setTenants(tenantList);
+    } catch (error: any) {
+      console.log('Tenants not available - user may need to connect to Xero');
+    }
+  };
+
+  const fetchBankTransfers = async () => {
+    setLoading(true);
+    try {
+      const response = await xeroService.getBankTransfers({
+        tenant_id: selectedTenant || undefined,
+        page,
+        page_size: pageSize,
+      });
+      setData(response.data);
+      setTotal(response.total);
+    } catch (error) {
+      console.log('Failed to fetch bank transfers:', error);
+      setData([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredData = data.filter(item =>
+    item.bank_transfer_id?.toLowerCase().includes(searchText.toLowerCase()) ||
+    item.from_bank_account_id?.toLowerCase().includes(searchText.toLowerCase()) ||
+    item.to_bank_account_id?.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
+
+  const columns: ColumnsType<XeroBankTransferData> = [
+    {
+      title: 'Date',
+      dataIndex: 'date',
+      key: 'date',
+      width: 110,
+      sorter: (a, b) => (a.date || '').localeCompare(b.date || ''),
+    },
+    {
+      title: 'From Account',
+      dataIndex: 'from_bank_account_id',
+      key: 'from_bank_account_id',
+      ellipsis: true,
+      render: (id) => id || '-',
+    },
+    {
+      title: 'To Account',
+      dataIndex: 'to_bank_account_id',
+      key: 'to_bank_account_id',
+      ellipsis: true,
+      render: (id) => id || '-',
+    },
+    {
+      title: 'Amount',
+      dataIndex: 'amount',
+      key: 'amount',
+      width: 130,
+      align: 'right',
+      render: (amount) => formatCurrency(amount),
+      sorter: (a, b) => a.amount - b.amount,
+    },
+    {
+      title: 'Attachments',
+      dataIndex: 'has_attachments',
+      key: 'has_attachments',
+      width: 110,
+      render: (hasAttachments) => (
+        <Tag color={hasAttachments ? 'green' : 'default'}>{hasAttachments ? 'Yes' : 'No'}</Tag>
+      ),
+    },
+    {
+      title: 'Tenant',
+      dataIndex: 'tenant_name',
+      key: 'tenant_name',
+      width: 150,
+      render: (name: string) => name || '-',
+    },
+    {
+      title: 'Integration ID',
+      dataIndex: 'integration_id',
+      key: 'integration_id',
+      width: 120,
+      render: (id: string) => id || '-',
+    },
+    {
+      title: 'Tenant ID',
+      dataIndex: 'tenant_id',
+      key: 'tenant_id',
+      width: 120,
+      render: (id: string) => id ? shortId(id) : '-',
+    },
+  ];
+
+  return (
+    <div className="xero-list-container">
+      <Breadcrumb className="page-breadcrumb">
+        <Breadcrumb.Item>
+          <Link to="/dashboard">Dashboard</Link>
+        </Breadcrumb.Item>
+        <Breadcrumb.Item>
+          <Link to="/xero/list">Xero</Link>
+        </Breadcrumb.Item>
+        <Breadcrumb.Item>Bank Transfers</Breadcrumb.Item>
+      </Breadcrumb>
+
+      <div className="page-header">
+        <h1 className="page-title">Bank Transfers</h1>
+        <div className="header-actions">
+          <Select
+            value={selectedTenant}
+            onChange={setSelectedTenant}
+            style={{ width: 250 }}
+            size="large"
+            placeholder="Select Organization"
+          >
+            <Option key="all" value="">All Organizations</Option>
+            {tenants.map(tenant => (
+              <Option key={tenant.tenant_id} value={tenant.tenant_id}>
+                {tenant.tenant_name} ({shortId(tenant.tenant_id)})
+              </Option>
+            ))}
+          </Select>
+        </div>
+      </div>
+
+      <Card className="xero-list-card">
+        <div className="table-toolbar">
+          <Input
+            placeholder="Search by account ID..."
+            prefix={<SearchOutlined style={{ color: '#9CA3AF' }} />}
+            style={{ width: 350 }}
+            className="search-input"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+          <span style={{ color: '#6B7280' }}>Total: {total} transfers</span>
+        </div>
+
+        <Table
+          columns={columns}
+          dataSource={filteredData}
+          loading={loading}
+          rowKey="id"
+          pagination={{
+            current: page,
+            pageSize: pageSize,
+            total: total,
+            showSizeChanger: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total}`,
+            onChange: (p, ps) => {
+              setPage(p);
+              setPageSize(ps || 20);
+            },
+          }}
+          locale={{
+            emptyText: (
+              <div className="empty-state">
+                <div className="empty-icon">💸</div>
+                <p className="empty-text">No bank transfers found. Please sync data from Xero first.</p>
+              </div>
+            ),
+          }}
+        />
+      </Card>
+    </div>
+  );
+};
+
+export default XeroBankTransfers;

@@ -1,0 +1,248 @@
+/* Practice 360 Container */
+.practice360-container {
+  padding: 24px;
+  background: #F9FAFB;
+  min-height: 100vh;
+}
+
+/* Header */
+.practice360-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 24px 32px;
+  background: linear-gradient(135deg, #22C55E 0%, #6366F1 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+.practice360-title {
+  font-size: 32px;
+  font-weight: 600;
+  color: white;
+  margin: 0;
+  font-family: 'Poppins', 'Inter', sans-serif;
+}
+
+.practice360-header .ant-select-selector {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: white !important;
+  border-radius: 8px;
+}
+
+.practice360-header .ant-select-arrow {
+  color: white;
+}
+
+.practice360-header .ant-select-selection-item {
+  color: white !important;
+}
+
+/* Summary Card */
+.summary-card {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: none;
+}
+
+.summary-card .ant-card-head {
+  border-bottom: 1px solid #F0F0F0;
+  padding: 16px 24px;
+}
+
+.summary-card .ant-card-head-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.summary-card .ant-card-body {
+  padding: 24px;
+}
+
+/* Stat Box */
+.stat-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #E5E7EB;
+  transition: all 0.3s ease;
+}
+
+.stat-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #6B7280;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+/* Charts Row */
+.charts-row {
+  margin-bottom: 24px;
+}
+
+/* Chart Card */
+.chart-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: none;
+  height: 100%;
+}
+
+.chart-card .ant-card-head {
+  border-bottom: 1px solid #F0F0F0;
+  padding: 16px 24px;
+}
+
+.chart-card .ant-card-head-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.chart-card .ant-card-body {
+  padding: 24px;
+}
+
+/* Table Card */
+.table-card {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: none;
+}
+
+.table-card .ant-card-head {
+  border-bottom: 1px solid #F0F0F0;
+  padding: 16px 24px;
+}
+
+.table-card .ant-card-head-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.table-card .ant-card-body {
+  padding: 0;
+}
+
+.table-card .ant-table {
+  border-radius: 0 0 12px 12px;
+}
+
+.table-card .ant-table-thead > tr > th {
+  background: #FAFAFA;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #E5E7EB;
+}
+
+.table-card .ant-table-tbody > tr:hover > td {
+  background: #F9FAFB;
+}
+
+/* System Progress Row */
+.system-progress-row {
+  margin-bottom: 24px;
+  padding: 24px 0;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.progress-circle-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.progress-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Custom Tag Styles */
+.ant-tag {
+  font-weight: 500;
+  border: none;
+}
+
+/* Table Customization */
+.ant-table-pagination {
+  padding: 16px 24px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .practice360-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .practice360-title {
+    font-size: 24px;
+  }
+
+  .practice360-header .ant-select {
+    width: 100%;
+  }
+
+  .stat-box {
+    margin-bottom: 16px;
+  }
+
+  .charts-row .ant-col {
+    margin-bottom: 16px;
+  }
+
+  .system-progress-row .ant-col {
+    margin-bottom: 16px;
+  }
+}
+
+/* Chart Tooltips */
+.recharts-tooltip-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.recharts-default-tooltip {
+  background: white !important;
+  border: 1px solid #E5E7EB !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+}
+
+/* Progress Circle Customization */
+.ant-progress-circle .ant-progress-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1F2937;
+}

@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkFin Platform Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px;
+            background: #fff;
+        }
+
+        h1 {
+            color: #1a365d;
+            font-size: 2.5em;
+            border-bottom: 3px solid #3182ce;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            color: #2c5282;
+            font-size: 1.8em;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+
+        h3 {
+            color: #2d3748;
+            font-size: 1.4em;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        h4 {
+            color: #4a5568;
+            font-size: 1.1em;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            margin-bottom: 15px;
+        }
+
+        .subtitle {
+            color: #718096;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+
+        .meta {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #3182ce;
+        }
+
+        .meta p {
+            margin: 5px 0;
+            font-size: 0.95em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.9em;
+        }
+
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #edf2f7;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        tr:nth-child(even) {
+            background: #f7fafc;
+        }
+
+        code {
+            background: #edf2f7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+            color: #c53030;
+        }
+
+        pre {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85em;
+            line-height: 1.5;
+        }
+
+        .toc {
+            background: #f7fafc;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+
+        .toc h3 {
+            margin-top: 0;
+            color: #2c5282;
+        }
+
+        .toc ol {
+            margin-left: 20px;
+        }
+
+        .toc li {
+            margin: 8px 0;
+        }
+
+        .architecture-diagram {
+            background: #1a202c;
+            color: #68d391;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.75em;
+            overflow-x: auto;
+            white-space: pre;
+            line-height: 1.3;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .feature-card {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #3182ce;
+        }
+
+        .feature-card h4 {
+            margin-top: 0;
+            color: #2c5282;
+        }
+
+        .check {
+            color: #38a169;
+            font-weight: bold;
+        }
+
+        .section-divider {
+            border: none;
+            height: 2px;
+            background: linear-gradient(to right, #3182ce, transparent);
+            margin: 40px 0;
+        }
+
+        ul {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        .highlight {
+            background: #fef3c7;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .endpoint-table td:first-child {
+            font-family: monospace;
+            font-size: 0.85em;
+            background: #edf2f7;
+        }
+
+        @media print {
+            body {
+                padding: 20px;
+            }
+
+            h2 {
+                page-break-before: always;
+            }
+
+            h2:first-of-type {
+                page-break-before: avoid;
+            }
+
+            pre, .architecture-diagram {
+                white-space: pre-wrap;
+                word-wrap: break-word;
+            }
+
+            table {
+                font-size: 0.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>WorkFin Platform Documentation</h1>
+    <p class="subtitle">Technical Documentation & Implementation Guide</p>
+
+    <div class="meta">
+        <p><strong>Version:</strong> 1.0</p>
+        <p><strong>Last Updated:</strong> January 2026</p>
+        <p><strong>Project:</strong> WorkFin Client UI with Xero Integration</p>
+    </div>
+
+    <div class="toc">
+        <h3>Table of Contents</h3>
+        <ol>
+            <li>Project Overview</li>
+            <li>Technology Stack</li>
+            <li>System Architecture</li>
+            <li>Frontend Application</li>
+            <li>Backend API</li>
+            <li>Xero Integration</li>
+            <li>Database Schema</li>
+            <li>API Endpoints Reference</li>
+            <li>Data Flow Diagrams</li>
+            <li>Configuration & Environment</li>
+        </ol>
+    </div>
+
+    <hr class="section-divider">
+
+    <h2>1. Project Overview</h2>
+
+    <p>WorkFin is a comprehensive financial management platform that integrates with Xero accounting software to provide real-time synchronization of financial data. The platform enables businesses to:</p>
+
+    <ul>
+        <li>Connect to Xero accounts via OAuth 2.0</li>
+        <li>Sync financial data including accounts, contacts, invoices, payments, and more</li>
+        <li>View and manage synced data through an intuitive dashboard</li>
+        <li>Perform quick syncs for rapid data updates</li>
+        <li>Manage client onboarding and user administration</li>
+    </ul>
+
+    <h3>Key Features</h3>
+    <table>
+        <tr>
+            <th>Feature</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>Xero OAuth Integration</td>
+            <td>Secure OAuth 2.0 connection to Xero</td>
+        </tr>
+        <tr>
+            <td>Real-time Data Sync</td>
+            <td>Full and quick sync options</td>
+        </tr>
+        <tr>
+            <td>Multi-tenant Support</td>
+            <td>Support for multiple Xero organizations</td>
+        </tr>
+        <tr>
+            <td>Financial Data Views</td>
+            <td>11 different data visualization pages</td>
+        </tr>
+        <tr>
+            <td>Client Management</td>
+            <td>Onboarding and user management</td>
+        </tr>
+        <tr>
+            <td>Power BI Integration</td>
+            <td>External reporting capabilities</td>
+        </tr>
+    </table>
+
+    <hr class="section-divider">
+
+    <h2>2. Technology Stack</h2>
+
+    <h3>Frontend</h3>
+    <table>
+        <tr>
+            <th>Technology</th>
+            <th>Version</th>
+            <th>Purpose</th>
+        </tr>
+        <tr>
+            <td>React</td>
+            <td>18.x</td>
+            <td>UI Framework</td>
+        </tr>
+        <tr>
+            <td>TypeScript</td>
+            <td>5.x</td>
+            <td>Type Safety</td>
+        </tr>
+        <tr>
+            <td>Ant Design</td>
+            <td>5.x</td>
+            <td>UI Component Library</td>
+        </tr>
+        <tr>
+            <td>React Router</td>
+            <td>6.x</td>
+            <td>Navigation</td>
+        </tr>
+        <tr>
+            <td>Axios</td>
+            <td>1.x</td>
+            <td>HTTP Client</td>
+        </tr>
+        <tr>
+            <td>Vite</td>
+            <td>5.x</td>
+            <td>Build Tool</td>
+        </tr>
+    </table>
+
+    <h3>Backend</h3>
+    <table>
+        <tr>
+            <th>Technology</th>
+            <th>Version</th>
+            <th>Purpose</th>
+        </tr>
+        <tr>
+            <td>Python</td>
+            <td>3.11+</td>
+            <td>Runtime</td>
+        </tr>
+        <tr>
+            <td>FastAPI</td>
+            <td>0.100+</td>
+            <td>API Framework</td>
+        </tr>
+        <tr>
+            <td>SQLAlchemy</td>
+            <td>2.x</td>
+            <td>ORM</td>
+        </tr>
+        <tr>
+            <td>asyncpg</td>
+            <td>0.28+</td>
+            <td>PostgreSQL Driver</td>
+        </tr>
+        <tr>
+            <td>httpx</td>
+            <td>0.24+</td>
+            <td>Async HTTP Client</td>
+        </tr>
+        <tr>
+            <td>Pydantic</td>
+            <td>2.x</td>
+            <td>Data Validation</td>
+        </tr>
+    </table>
+
+    <h3>Database & External Services</h3>
+    <table>
+        <tr>
+            <th>Service</th>
+            <th>Purpose</th>
+        </tr>
+        <tr>
+            <td>PostgreSQL 15+</td>
+            <td>Primary Database</td>
+        </tr>
+        <tr>
+            <td>Supabase</td>
+            <td>Hosted PostgreSQL + PgBouncer</td>
+        </tr>
+        <tr>
+            <td>Xero API</td>
+            <td>Accounting Data Source</td>
+        </tr>
+        <tr>
+            <td>Power BI</td>
+            <td>Business Intelligence Reports</td>
+        </tr>
+    </table>
+
+    <hr class="section-divider">
+
+    <h2>3. System Architecture</h2>
+
+    <div class="architecture-diagram">
++-----------------------------------------------------------------------+
+|                        WORKFIN PLATFORM                                |
++-----------------------------------------------------------------------+
+|                                                                        |
+|  +------------------+         +------------------+                     |
+|  |   React Frontend |         |   FastAPI Backend |                    |
+|  |   (Port: 5174)   |<------->|   (Port: 8000)    |                    |
+|  |                  |  REST   |                   |                    |
+|  |  - Ant Design UI |  API    |  - OAuth Handler  |                    |
+|  |  - React Router  |         |  - Sync Service   |                    |
+|  |  - Axios Client  |         |  - Data Endpoints |                    |
+|  +------------------+         +--------+----------+                    |
+|                                        |                               |
+|                                        | SQLAlchemy                    |
+|                                        | + asyncpg                     |
+|                                        v                               |
+|                               +------------------+                     |
+|                               |   PostgreSQL      |                    |
+|                               |   (Supabase)      |                    |
+|                               |                   |                    |
+|                               |  - xero schema    |                    |
+|                               |  - public schema  |                    |
+|                               +------------------+                     |
+|                                                                        |
++-----------------------------------------------------------------------+
+                                    |
+                                    | OAuth 2.0 + REST API
+                                    v
+                          +------------------+
+                          |    XERO API       |
+                          |                   |
+                          |  - OAuth Server   |
+                          |  - Accounting API |
+                          +------------------+
+    </div>
+
+    <hr class="section-divider">
+
+    <h2>4. Frontend Application</h2>
+
+    <h3>4.1 Project Structure</h3>
+    <pre>
+src/
+├── components/
+│   └── layout/
+│       ├── DashboardLayout.tsx    # Main layout wrapper
+│       ├── SidebarNav.tsx         # Navigation sidebar
+│       └── SidebarNav.css
+├── config/
+│   └── constants.ts               # API endpoints & config
+├── pages/
+│   ├── auth/
+│   │   └── LoginPage.tsx          # Authentication
+│   ├── compass/
+│   │   ├── CompassDatesList.tsx   # Compass dates list
+│   │   └── CompassDatesCreate.tsx # Create/edit compass dates
+│   ├── dashboard/
+│   │   └── Practice360.tsx        # Main dashboard
+│   ├── onboarding/
+│   │   ├── ClientOnboardingList.tsx   # Client list
+│   │   ├── ClientOnboardingCreate.tsx # Create/edit client
+│   │   └── ClientOnboardingUsers.tsx  # Client users
+│   ├── users/
+│   │   ├── WorkFinUserList.tsx    # User list
+│   │   └── WorkFinUserCreate.tsx  # Create/edit user
+│   └── xero/
+│       ├── XeroList.tsx           # Xero connections
+│       ├── XeroAccounts.tsx       # Chart of Accounts
+│       ├── XeroContacts.tsx       # Contacts
+│       ├── XeroContactGroups.tsx  # Contact Groups
+│       ├── XeroInvoices.tsx       # Invoices
+│       ├── XeroCreditNotes.tsx    # Credit Notes
+│       ├── XeroPayments.tsx       # Payments
+│       ├── XeroBankTransactions.tsx  # Bank Transactions
+│       ├── XeroBankTransfers.tsx  # Bank Transfers
+│       ├── XeroJournals.tsx       # Journals
+│       └── XeroJournalLines.tsx   # Journal Lines
+└── services/
+    ├── api.ts                     # Axios configuration
+    ├── xeroService.ts             # Xero API service
+    └── index.ts                   # Service exports
+    </pre>
+
+    <h3>4.2 Page Routes</h3>
+    <table>
+        <tr>
+            <th>Route</th>
+            <th>Component</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td><code>/login</code></td>
+            <td>LoginPage</td>
+            <td>User authentication</td>
+        </tr>
+        <tr>
+            <td><code>/dashboard</code></td>
+            <td>Practice360</td>
+            <td>Main dashboard</td>
+        </tr>
+        <tr>
+            <td><code>/xero/list</code></td>
+            <td>XeroList</td>
+            <td>Xero connections & sync</td>
+        </tr>
+        <tr>
+            <td><code>/xero/accounts</code></td>
+            <td>XeroAccounts</td>
+            <td>Chart of Accounts</td>
+        </tr>
+        <tr>
+            <td><code>/xero/contacts</code></td>
+            <td>XeroContacts</td>
+            <td>Contacts list</td>
+        </tr>
+        <tr>
+            <td><code>/xero/contact-groups</code></td>
+            <td>XeroContactGroups</td>
+            <td>Contact groups</td>
+        </tr>
+        <tr>
+            <td><code>/xero/invoices</code></td>
+            <td>XeroInvoices</td>
+            <td>Invoices list</td>
+        </tr>
+        <tr>
+            <td><code>/xero/credit-notes</code></td>
+            <td>XeroCreditNotes</td>
+            <td>Credit notes</td>
+        </tr>
+        <tr>
+            <td><code>/xero/payments</code></td>
+            <td>XeroPayments</td>
+            <td>Payments list</td>
+        </tr>
+        <tr>
+            <td><code>/xero/bank-transactions</code></td>
+            <td>XeroBankTransactions</td>
+            <td>Bank transactions</td>
+        </tr>
+        <tr>
+            <td><code>/xero/bank-transfers</code></td>
+            <td>XeroBankTransfers</td>
+            <td>Bank transfers</td>
+        </tr>
+        <tr>
+            <td><code>/xero/journals</code></td>
+            <td>XeroJournals</td>
+            <td>Journals list</td>
+        </tr>
+        <tr>
+            <td><code>/xero/journal-lines</code></td>
+            <td>XeroJournalLines</td>
+            <td>Journal line items</td>
+        </tr>
+        <tr>
+            <td><code>/onboarding</code></td>
+            <td>ClientOnboardingList</td>
+            <td>Client list</td>
+        </tr>
+        <tr>
+            <td><code>/users/list</code></td>
+            <td>WorkFinUserList</td>
+            <td>User list</td>
+        </tr>
+        <tr>
+            <td><code>/compass/list</code></td>
+            <td>CompassDatesList</td>
+            <td>Compass dates</td>
+        </tr>
+    </table>
+
+    <hr class="section-divider">
+
+    <h2>5. Backend API</h2>
+
+    <h3>5.1 Project Structure</h3>
+    <pre>
+Workfin_backend/
+├── app/
+│   ├── api/
+│   │   └── v1/
+│   │       └── endpoints/
+│   │           └── xero.py        # Xero API endpoints
+│   ├── core/
+│   │   └── config.py              # Application settings
+│   ├── db/
+│   │   ├── database.py            # Database connection
+│   │   └── xero_models.py         # SQLAlchemy models
+│   ├── schemas/
+│   │   └── xero.py                # Pydantic schemas
+│   └── services/
+│       └── xero_service.py        # Xero API client
+├── main.py                        # FastAPI application
+└── requirements.txt               # Python dependencies
+    </pre>
+
+    <h3>5.2 PgBouncer Compatible Database Configuration</h3>
+    <pre>
+# Custom connection class for PgBouncer compatibility
+class PgBouncerConnection(Connection):
+    def _get_unique_id(self, prefix: str) -> str:
+        return f"__asyncpg_{prefix}_{uuid4()}__"
+
+engine = create_async_engine(
+    settings.DATABASE_URL,
+    echo=True,
+    future=True,
+    poolclass=NullPool,
+    connect_args={
+        "server_settings": {"search_path": '"denpay-dev", public'},
+        "prepared_statement_cache_size": 0,
+        "statement_cache_size": 0,
+        "connection_class": PgBouncerConnection,
+    },
+)
+    </pre>
+
+    <hr class="section-divider">
+
+    <h2>6. Xero Integration</h2>
+
+    <h3>6.1 OAuth 2.0 Flow</h3>
+    <div class="architecture-diagram">
++--------+     +---------+     +---------+     +-------+
+| Browser|     |Frontend |     | Backend |     | Xero  |
++---+----+     +----+----+     +----+----+     +---+---+
+    |               |               |              |
+    | Click Connect |               |              |
+    |-------------->|               |              |
+    |               |               |              |
+    |               | GET /authorize|              |
+    |               |-------------->|              |
+    |               |               |              |
+    |               | auth_url      |              |
+    |               |<--------------|              |
+    |               |               |              |
+    | Redirect to Xero              |              |
+    |<--------------|               |              |
+    |               |               |              |
+    | Xero Login & Consent          |              |
+    |----------------------------------------->    |
+    |               |               |              |
+    | Redirect with code            |              |
+    |<-----------------------------------------    |
+    |               |               |              |
+    | GET /callback?code=xxx        |              |
+    |-------------------------->    |              |
+    |               |               |              |
+    |               |               | Exchange code|
+    |               |               |------------->|
+    |               |               |              |
+    |               |               | Access Token |
+    |               |               |<-------------|
+    |               |               |              |
+    |               |               | Store Token  |
+    |               |               | in Database  |
+    |               |               |              |
+    | Redirect to /xero/list?connected             |
+    |<--------------------------|   |              |
+    </div>
+
+    <h3>6.2 Data Synchronization</h3>
+
+    <h4>Full Sync</h4>
+    <ul>
+        <li>Fetches all pages of each entity type</li>
+        <li>Commits in batches of 50 records</li>
+        <li>Syncs 10 entity types in sequence</li>
+    </ul>
+
+    <h4>Quick Sync</h4>
+    <ul>
+        <li>Fast sync with limited records (default: 20 per entity)</li>
+        <li>Single page fetch per entity</li>
+        <li>Syncs all 10 entity types</li>
+        <li>Ideal for quick data updates</li>
+    </ul>
+
+    <h3>6.3 Synced Entity Types</h3>
+    <table>
+        <tr>
+            <th>Entity</th>
+            <th>Full Sync</th>
+            <th>Quick Sync</th>
+            <th>Pagination</th>
+        </tr>
+        <tr>
+            <td>Accounts</td>
+            <td class="check">Yes</td>
+            <td class="check">Yes (limited)</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>Contacts</td>
+            <td class="check">Yes</td>
+            <td class="check">Yes (limited)</td>
+            <td>100/page</td>
+        </tr>
+        <tr>
+            <td>Contact Groups</td>
+            <td class="check">Yes</td>
+            <td class="check">Yes (limited)</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>Invoices</td>
+            <td class="check">Yes</td>
+            <td class="check">Yes (limited)</td>
+            <td>100/page</td>
+        </tr>
+        <tr>
+            <td>Credit Notes</td>
+            <td class="check">Yes</td>
+            <td class="check">Yes (limited)</td>
+            <td>100/page</td>
+        </tr>
+        <tr>
+            <td>Payments</td>
+            <td class="check">Yes</td>
+            <td class="check">Yes (limited)</td>
+            <td>100/page</td>
+        </tr>
+        <tr>
+            <td>Bank Transactions</td>
+            <td class="check">Yes</td>
+            <td class="check">Yes (limited)</td>
+            <td>100/page</td>
+        </tr>
+        <tr>
+            <td>Bank Transfers</td>
+            <td class="check">Yes</td>
+            <td class="check">Yes (limited)</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>Journals</td>
+            <td class="check">Yes</td>
+            <td class="check">Yes (limited)</td>
+            <td>Offset-based</td>
+        </tr>
+        <tr>
+            <td>Journal Lines</td>
+            <td class="check">Yes (with Journals)</td>
+            <td class="check">Yes (with Journals)</td>
+            <td>N/A</td>
+        </tr>
+    </table>
+
+    <hr class="section-divider">
+
+    <h2>7. Database Schema</h2>
+
+    <h3>7.1 Schema Overview</h3>
+    <p>All Xero data is stored in the <code>xero</code> schema within PostgreSQL.</p>
+
+    <h3>7.2 Database Tables</h3>
+
+    <h4>xero.tokens</h4>
+    <table>
+        <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+        <tr><td>id</td><td>UUID</td><td>Primary key</td></tr>
+        <tr><td>client_id</td><td>UUID</td><td>Reference to client</td></tr>
+        <tr><td>tenant_id</td><td>VARCHAR(100)</td><td>Xero organization ID</td></tr>
+        <tr><td>tenant_name</td><td>VARCHAR(255)</td><td>Organization name</td></tr>
+        <tr><td>access_token</td><td>TEXT</td><td>OAuth access token</td></tr>
+        <tr><td>refresh_token</td><td>TEXT</td><td>OAuth refresh token</td></tr>
+        <tr><td>expires_at</td><td>TIMESTAMP</td><td>Token expiration</td></tr>
+    </table>
+
+    <h4>xero.accounts</h4>
+    <table>
+        <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+        <tr><td>id</td><td>UUID</td><td>Primary key</td></tr>
+        <tr><td>account_id</td><td>VARCHAR(100)</td><td>Xero Account ID (unique)</td></tr>
+        <tr><td>tenant_id</td><td>VARCHAR(100)</td><td>Xero organization ID</td></tr>
+        <tr><td>code</td><td>VARCHAR(50)</td><td>Account code</td></tr>
+        <tr><td>name</td><td>VARCHAR(255)</td><td>Account name</td></tr>
+        <tr><td>type</td><td>VARCHAR(50)</td><td>BANK, CURRENT, EQUITY, etc.</td></tr>
+        <tr><td>class</td><td>VARCHAR(50)</td><td>ASSET, LIABILITY, REVENUE, etc.</td></tr>
+        <tr><td>status</td><td>VARCHAR(50)</td><td>ACTIVE, ARCHIVED</td></tr>
+        <tr><td>raw_data</td><td>JSONB</td><td>Full Xero response</td></tr>
+    </table>
+
+    <h4>xero.contacts</h4>
+    <table>
+        <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+        <tr><td>id</td><td>UUID</td><td>Primary key</td></tr>
+        <tr><td>contact_id</td><td>VARCHAR(100)</td><td>Xero Contact ID (unique)</td></tr>
+        <tr><td>name</td><td>VARCHAR(500)</td><td>Contact name</td></tr>
+        <tr><td>email_address</td><td>VARCHAR(255)</td><td>Email</td></tr>
+        <tr><td>is_customer</td><td>BOOLEAN</td><td>Customer flag</td></tr>
+        <tr><td>is_supplier</td><td>BOOLEAN</td><td>Supplier flag</td></tr>
+        <tr><td>contact_status</td><td>VARCHAR(50)</td><td>ACTIVE, ARCHIVED</td></tr>
+    </table>
+
+    <h4>xero.invoices</h4>
+    <table>
+        <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+        <tr><td>id</td><td>UUID</td><td>Primary key</td></tr>
+        <tr><td>invoice_id</td><td>VARCHAR(100)</td><td>Xero Invoice ID (unique)</td></tr>
+        <tr><td>type</td><td>VARCHAR(50)</td><td>ACCPAY, ACCREC</td></tr>
+        <tr><td>invoice_number</td><td>VARCHAR(100)</td><td>Invoice number</td></tr>
+        <tr><td>contact_name</td><td>VARCHAR(500)</td><td>Contact name</td></tr>
+        <tr><td>date</td><td>DATE</td><td>Invoice date</td></tr>
+        <tr><td>due_date</td><td>DATE</td><td>Due date</td></tr>
+        <tr><td>status</td><td>VARCHAR(50)</td><td>DRAFT, AUTHORISED, PAID, VOIDED</td></tr>
+        <tr><td>total</td><td>NUMERIC(18,2)</td><td>Total amount</td></tr>
+        <tr><td>amount_due</td><td>NUMERIC(18,2)</td><td>Amount due</td></tr>
+    </table>
+
+    <h4>xero.payments</h4>
+    <table>
+        <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+        <tr><td>id</td><td>UUID</td><td>Primary key</td></tr>
+        <tr><td>payment_id</td><td>VARCHAR(100)</td><td>Xero Payment ID (unique)</td></tr>
+        <tr><td>date</td><td>DATE</td><td>Payment date</td></tr>
+        <tr><td>amount</td><td>NUMERIC(18,2)</td><td>Payment amount</td></tr>
+        <tr><td>invoice_id</td><td>VARCHAR(100)</td><td>Associated invoice</td></tr>
+        <tr><td>status</td><td>VARCHAR(50)</td><td>AUTHORISED, DELETED</td></tr>
+        <tr><td>is_reconciled</td><td>BOOLEAN</td><td>Reconciliation status</td></tr>
+    </table>
+
+    <h4>xero.journals & xero.journalsLines</h4>
+    <table>
+        <tr><th>journals Column</th><th>Type</th><th>journalsLines Column</th><th>Type</th></tr>
+        <tr><td>journal_id</td><td>VARCHAR(100)</td><td>journal_line_id</td><td>VARCHAR(100)</td></tr>
+        <tr><td>tenant_id</td><td>VARCHAR(100)</td><td>journal_id</td><td>VARCHAR(100)</td></tr>
+        <tr><td>journal_date</td><td>DATE</td><td>account_id</td><td>VARCHAR(100)</td></tr>
+        <tr><td>journal_number</td><td>INTEGER</td><td>account_code</td><td>VARCHAR(50)</td></tr>
+        <tr><td>reference</td><td>VARCHAR(255)</td><td>net_amount</td><td>NUMERIC(18,2)</td></tr>
+        <tr><td>source_type</td><td>VARCHAR(50)</td><td>gross_amount</td><td>NUMERIC(18,2)</td></tr>
+    </table>
+
+    <hr class="section-divider">
+
+    <h2>8. API Endpoints Reference</h2>
+
+    <h3>8.1 OAuth Endpoints</h3>
+    <table class="endpoint-table">
+        <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+        <tr><td>GET</td><td>/api/v1/xero/authorize</td><td>Get Xero authorization URL</td></tr>
+        <tr><td>GET</td><td>/api/v1/xero/callback</td><td>OAuth callback handler</td></tr>
+        <tr><td>POST</td><td>/api/v1/xero/disconnect</td><td>Disconnect from Xero</td></tr>
+        <tr><td>GET</td><td>/api/v1/xero/status</td><td>Check connection status</td></tr>
+        <tr><td>GET</td><td>/api/v1/xero/tenants</td><td>Get connected organizations</td></tr>
+    </table>
+
+    <h3>8.2 Sync Endpoints</h3>
+    <table class="endpoint-table">
+        <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+        <tr><td>POST</td><td>/api/v1/xero/sync/all?tenant_id=xxx</td><td>Full data sync</td></tr>
+        <tr><td>POST</td><td>/api/v1/xero/sync/quick?tenant_id=xxx&limit=20</td><td>Quick sync (limited)</td></tr>
+        <tr><td>POST</td><td>/api/v1/xero/sync/accounts?tenant_id=xxx</td><td>Sync accounts only</td></tr>
+        <tr><td>POST</td><td>/api/v1/xero/sync/contacts?tenant_id=xxx</td><td>Sync contacts only</td></tr>
+        <tr><td>POST</td><td>/api/v1/xero/sync/contact-groups?tenant_id=xxx</td><td>Sync contact groups</td></tr>
+        <tr><td>POST</td><td>/api/v1/xero/sync/invoices?tenant_id=xxx</td><td>Sync invoices only</td></tr>
+        <tr><td>POST</td><td>/api/v1/xero/sync/credit-notes?tenant_id=xxx</td><td>Sync credit notes</td></tr>
+        <tr><td>POST</td><td>/api/v1/xero/sync/payments?tenant_id=xxx</td><td>Sync payments only</td></tr>
+        <tr><td>POST</td><td>/api/v1/xero/sync/bank-transactions?tenant_id=xxx</td><td>Sync bank transactions</td></tr>
+        <tr><td>POST</td><td>/api/v1/xero/sync/bank-transfers?tenant_id=xxx</td><td>Sync bank transfers</td></tr>
+        <tr><td>POST</td><td>/api/v1/xero/sync/journals?tenant_id=xxx</td><td>Sync journals</td></tr>
+    </table>
+
+    <h3>8.3 Data Retrieval Endpoints</h3>
+    <table class="endpoint-table">
+        <tr><th>Method</th><th>Endpoint</th><th>Query Parameters</th></tr>
+        <tr><td>GET</td><td>/api/v1/xero/data/accounts</td><td>tenant_id, page, page_size</td></tr>
+        <tr><td>GET</td><td>/api/v1/xero/data/contacts</td><td>tenant_id, page, page_size, is_customer, is_supplier</td></tr>
+        <tr><td>GET</td><td>/api/v1/xero/data/contact-groups</td><td>tenant_id, page, page_size</td></tr>
+        <tr><td>GET</td><td>/api/v1/xero/data/invoices</td><td>tenant_id, page, page_size, status, type</td></tr>
+        <tr><td>GET</td><td>/api/v1/xero/data/credit-notes</td><td>tenant_id, page, page_size</td></tr>
+        <tr><td>GET</td><td>/api/v1/xero/data/payments</td><td>tenant_id, page, page_size</td></tr>
+        <tr><td>GET</td><td>/api/v1/xero/data/bank-transactions</td><td>tenant_id, page, page_size</td></tr>
+        <tr><td>GET</td><td>/api/v1/xero/data/bank-transfers</td><td>tenant_id, page, page_size</td></tr>
+        <tr><td>GET</td><td>/api/v1/xero/data/journals</td><td>tenant_id, page, page_size</td></tr>
+        <tr><td>GET</td><td>/api/v1/xero/data/journal-lines</td><td>tenant_id, journal_id, page, page_size</td></tr>
+    </table>
+
+    <h3>8.4 Response Formats</h3>
+
+    <h4>Paginated Response</h4>
+    <pre>
+{
+  "data": [...],
+  "total": 150,
+  "page": 1,
+  "page_size": 20,
+  "total_pages": 8
+}
+    </pre>
+
+    <h4>Sync Response</h4>
+    <pre>
+{
+  "entity_type": "accounts",
+  "synced_count": 45,
+  "status": "SUCCESS",
+  "message": null
+}
+    </pre>
+
+    <hr class="section-divider">
+
+    <h2>9. Configuration & Environment</h2>
+
+    <h3>9.1 Environment Variables</h3>
+
+    <h4>Backend (.env)</h4>
+    <pre>
+# Database
+DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/dbname
+
+# Xero OAuth
+XERO_CLIENT_ID=your_xero_client_id
+XERO_CLIENT_SECRET=your_xero_client_secret
+XERO_REDIRECT_URI=http://localhost:8000/api/v1/xero/callback
+XERO_SCOPES=openid profile email accounting.transactions accounting.contacts accounting.settings accounting.journals.read offline_access
+
+# Server
+HOST=0.0.0.0
+PORT=8000
+    </pre>
+
+    <h4>Frontend (.env)</h4>
+    <pre>
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+    </pre>
+
+    <h3>9.2 Required Xero OAuth Scopes</h3>
+    <table>
+        <tr><th>Scope</th><th>Purpose</th></tr>
+        <tr><td><code>openid</code></td><td>OpenID Connect</td></tr>
+        <tr><td><code>profile</code></td><td>User profile</td></tr>
+        <tr><td><code>email</code></td><td>User email</td></tr>
+        <tr><td><code>accounting.transactions</code></td><td>Invoices, payments, bank transactions</td></tr>
+        <tr><td><code>accounting.contacts</code></td><td>Contacts, contact groups</td></tr>
+        <tr><td><code>accounting.settings</code></td><td>Chart of accounts</td></tr>
+        <tr><td><code>accounting.journals.read</code></td><td>Journal entries</td></tr>
+        <tr><td><code>offline_access</code></td><td>Refresh tokens</td></tr>
+    </table>
+
+    <h3>9.3 Running the Application</h3>
+
+    <h4>Backend</h4>
+    <pre>
+cd Workfin_backend
+pip install -r requirements.txt
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+    </pre>
+
+    <h4>Frontend</h4>
+    <pre>
+cd Workfin_client_ui
+npm install
+npm run dev
+    </pre>
+
+    <hr class="section-divider">
+
+    <h2>Summary</h2>
+
+    <p>The WorkFin platform provides a comprehensive solution for integrating with Xero accounting software. Key accomplishments include:</p>
+
+    <ul>
+        <li><strong>Complete OAuth 2.0 Integration:</strong> Secure authentication flow with token refresh handling</li>
+        <li><strong>Multi-tenant Support:</strong> Connect and manage multiple Xero organizations</li>
+        <li><strong>Comprehensive Data Sync:</strong> 10 entity types with full and quick sync options</li>
+        <li><strong>PgBouncer Compatibility:</strong> Custom connection handling for Supabase deployment</li>
+        <li><strong>Responsive UI:</strong> Modern React frontend with Ant Design components</li>
+        <li><strong>Paginated Data Views:</strong> Efficient data display with filtering and search</li>
+    </ul>
+
+    <h3>Entity Coverage Summary</h3>
+    <table>
+        <tr><th>Entity</th><th>Sync</th><th>Display</th><th>API Endpoint</th></tr>
+        <tr><td>Accounts</td><td class="check">Yes</td><td class="check">Yes</td><td class="check">Yes</td></tr>
+        <tr><td>Contacts</td><td class="check">Yes</td><td class="check">Yes</td><td class="check">Yes</td></tr>
+        <tr><td>Contact Groups</td><td class="check">Yes</td><td class="check">Yes</td><td class="check">Yes</td></tr>
+        <tr><td>Invoices</td><td class="check">Yes</td><td class="check">Yes</td><td class="check">Yes</td></tr>
+        <tr><td>Credit Notes</td><td class="check">Yes</td><td class="check">Yes</td><td class="check">Yes</td></tr>
+        <tr><td>Payments</td><td class="check">Yes</td><td class="check">Yes</td><td class="check">Yes</td></tr>
+        <tr><td>Bank Transactions</td><td class="check">Yes</td><td class="check">Yes</td><td class="check">Yes</td></tr>
+        <tr><td>Bank Transfers</td><td class="check">Yes</td><td class="check">Yes</td><td class="check">Yes</td></tr>
+        <tr><td>Journals</td><td class="check">Yes</td><td class="check">Yes</td><td class="check">Yes</td></tr>
+        <tr><td>Journal Lines</td><td class="check">Yes</td><td class="check">Yes</td><td class="check">Yes</td></tr>
+    </table>
+
+    <hr class="section-divider">
+
+    <p style="text-align: center; color: #718096; margin-top: 40px;">
+        <em>Document generated for WorkFin Platform - January 2026</em>
+    </p>
+
+</body>
+</html>

@@ -1,0 +1,227 @@
+import React, { useState, useEffect } from 'react';
+import { Card, Table, Input, Select, Breadcrumb, Tag } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
+import { Link } from 'react-router-dom';
+import xeroService, { XeroBankTransactionData, XeroTenant } from '../../services/xeroService';
+import './XeroList.css';
+
+const { Option } = Select;
+
+const XeroBankTransactions: React.FC = () => {
+  const shortId = (id: string) => id.replace(/-/g, '').substring(0, 8).toUpperCase();
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<XeroBankTransactionData[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [tenants, setTenants] = useState<XeroTenant[]>([]);
+  const [selectedTenant, setSelectedTenant] = useState<string>('');
+  const [searchText, setSearchText] = useState('');
+
+  useEffect(() => {
+    fetchTenants();
+  }, []);
+
+  useEffect(() => {
+    fetchBankTransactions();
+  }, [selectedTenant, page, pageSize]);
+
+  const fetchTenants = async () => {
+    try {
+      const tenantList = await xeroService.getTenants();
+      setTenants(tenantList);
+    } catch (error: any) {
+      console.log('Tenants not available - user may need to connect to Xero');
+    }
+  };
+
+  const fetchBankTransactions = async () => {
+    setLoading(true);
+    try {
+      const response = await xeroService.getBankTransactions({
+        tenant_id: selectedTenant || undefined,
+        page,
+        page_size: pageSize,
+      });
+      setData(response.data);
+      setTotal(response.total);
+    } catch (error) {
+      console.log('Failed to fetch bank transactions:', error);
+      setData([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredData = data.filter(item =>
+    item.contact_name?.toLowerCase().includes(searchText.toLowerCase()) ||
+    item.reference?.toLowerCase().includes(searchText.toLowerCase()) ||
+    item.type?.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  const formatCurrency = (amount: number, currency?: string | null) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency || 'USD',
+    }).format(amount);
+  };
+
+  const columns: ColumnsType<XeroBankTransactionData> = [
+    {
+      title: 'Date',
+      dataIndex: 'date',
+      key: 'date',
+      width: 110,
+      sorter: (a, b) => (a.date || '').localeCompare(b.date || ''),
+    },
+    {
+      title: 'Type',
+      dataIndex: 'type',
+      key: 'type',
+      width: 120,
+      render: (type) => (
+        <Tag color={type === 'RECEIVE' ? 'green' : 'orange'}>
+          {type}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Contact',
+      dataIndex: 'contact_name',
+      key: 'contact_name',
+      render: (name) => name || '-',
+    },
+    {
+      title: 'Reference',
+      dataIndex: 'reference',
+      key: 'reference',
+      render: (ref) => ref || '-',
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      width: 110,
+      render: (status) => (
+        <Tag color={status === 'AUTHORISED' ? 'green' : 'default'}>{status}</Tag>
+      ),
+    },
+    {
+      title: 'Reconciled',
+      dataIndex: 'is_reconciled',
+      key: 'is_reconciled',
+      width: 100,
+      render: (reconciled) => (
+        <Tag color={reconciled ? 'green' : 'default'}>{reconciled ? 'Yes' : 'No'}</Tag>
+      ),
+    },
+    {
+      title: 'Total',
+      dataIndex: 'total',
+      key: 'total',
+      width: 120,
+      align: 'right',
+      render: (total, record) => formatCurrency(total, record.currency_code),
+      sorter: (a, b) => a.total - b.total,
+    },
+    {
+      title: 'Tenant',
+      dataIndex: 'tenant_name',
+      key: 'tenant_name',
+      width: 150,
+      render: (name: string) => name || '-',
+    },
+    {
+      title: 'Integration ID',
+      dataIndex: 'integration_id',
+      key: 'integration_id',
+      width: 120,
+      render: (id: string) => id || '-',
+    },
+    {
+      title: 'Tenant ID',
+      dataIndex: 'tenant_id',
+      key: 'tenant_id',
+      width: 120,
+      render: (id: string) => id ? shortId(id) : '-',
+    },
+  ];
+
+  return (
+    <div className="xero-list-container">
+      <Breadcrumb className="page-breadcrumb">
+        <Breadcrumb.Item>
+          <Link to="/dashboard">Dashboard</Link>
+        </Breadcrumb.Item>
+        <Breadcrumb.Item>
+          <Link to="/xero/list">Xero</Link>
+        </Breadcrumb.Item>
+        <Breadcrumb.Item>Bank Transactions</Breadcrumb.Item>
+      </Breadcrumb>
+
+      <div className="page-header">
+        <h1 className="page-title">Bank Transactions</h1>
+        <div className="header-actions">
+          <Select
+            value={selectedTenant}
+            onChange={setSelectedTenant}
+            style={{ width: 250 }}
+            size="large"
+            placeholder="Select Organization"
+          >
+            <Option key="all" value="">All Organizations</Option>
+            {tenants.map(tenant => (
+              <Option key={tenant.tenant_id} value={tenant.tenant_id}>
+                {tenant.tenant_name} ({shortId(tenant.tenant_id)})
+              </Option>
+            ))}
+          </Select>
+        </div>
+      </div>
+
+      <Card className="xero-list-card">
+        <div className="table-toolbar">
+          <Input
+            placeholder="Search by contact, reference, or type..."
+            prefix={<SearchOutlined style={{ color: '#9CA3AF' }} />}
+            style={{ width: 350 }}
+            className="search-input"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+          <span style={{ color: '#6B7280' }}>Total: {total} transactions</span>
+        </div>
+
+        <Table
+          columns={columns}
+          dataSource={filteredData}
+          loading={loading}
+          rowKey="id"
+          pagination={{
+            current: page,
+            pageSize: pageSize,
+            total: total,
+            showSizeChanger: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total}`,
+            onChange: (p, ps) => {
+              setPage(p);
+              setPageSize(ps || 20);
+            },
+          }}
+          locale={{
+            emptyText: (
+              <div className="empty-state">
+                <div className="empty-icon">🏦</div>
+                <p className="empty-text">No bank transactions found. Please sync data from Xero first.</p>
+              </div>
+            ),
+          }}
+        />
+      </Card>
+    </div>
+  );
+};
+
+export default XeroBankTransactions;

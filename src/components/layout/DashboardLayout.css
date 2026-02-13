@@ -1,0 +1,29 @@
+.dashboard-layout {
+  min-height: 100vh;
+  background: #F9FAFB;
+}
+
+.dashboard-content-layout {
+  margin-left: 280px;
+  transition: margin-left 0.3s ease;
+}
+
+.dashboard-content-layout.sidebar-collapsed {
+  margin-left: 70px;
+}
+
+.dashboard-main-content {
+  background: #F9FAFB;
+  min-height: calc(100vh - 64px);
+  margin-top: 64px;
+}
+
+@media (max-width: 768px) {
+  .dashboard-content-layout {
+    margin-left: 0;
+  }
+
+  .dashboard-content-layout.sidebar-collapsed {
+    margin-left: 0;
+  }
+}

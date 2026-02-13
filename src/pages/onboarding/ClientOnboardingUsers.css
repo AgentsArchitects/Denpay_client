@@ -1,0 +1,138 @@
+.client-users-container {
+  padding: 24px;
+  background: #F9FAFB;
+  min-height: calc(100vh - 64px);
+}
+
+/* Breadcrumb */
+.page-breadcrumb {
+  margin-bottom: 16px;
+}
+
+.page-breadcrumb a {
+  color: #6B7280;
+  transition: color 0.2s ease;
+}
+
+.page-breadcrumb a:hover {
+  color: #22C55E;
+}
+
+/* Page Header */
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1F2937;
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Card */
+.client-users-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: none;
+}
+
+.client-users-card .ant-card-body {
+  padding: 0;
+}
+
+/* Users Header */
+.users-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 2px solid #E5E7EB;
+}
+
+.users-tab {
+  flex: 1;
+}
+
+.tab-item {
+  font-size: 15px;
+  font-weight: 500;
+  color: #374151;
+  position: relative;
+}
+
+.tab-item.active {
+  color: #22C55E;
+}
+
+.tab-count {
+  background: #1F2937;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.search-input {
+  border-radius: 6px;
+}
+
+.search-input:focus,
+.search-input:hover {
+  border-color: #6366F1;
+}
+
+/* Table */
+.client-users-card .ant-table {
+  padding: 0;
+}
+
+.client-users-card .ant-table-thead > tr > th {
+  background: #FAFAFA;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #E5E7EB;
+}
+
+.client-users-card .ant-table-tbody > tr:hover > td {
+  background: #F9FAFB;
+}
+
+/* User Name Column */
+.user-name {
+  font-weight: 500;
+  color: #1F2937;
+  margin-bottom: 4px;
+}
+
+.user-email {
+  font-size: 13px;
+  color: #6B7280;
+}
+
+/* Status Tag */
+.status-tag {
+  border-radius: 6px;
+  font-weight: 500;
+  padding: 4px 12px;
+}
+
+/* Pagination */
+.client-users-card .ant-table-pagination {
+  padding: 16px 24px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .users-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+}

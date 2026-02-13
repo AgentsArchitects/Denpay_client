@@ -1,0 +1,160 @@
+.user-panel-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1999;
+}
+
+.user-profile-panel {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  width: 400px;
+  height: 100vh;
+  background: #ffffff;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+  z-index: 2000;
+  transition: right 0.3s ease;
+  overflow-y: auto;
+}
+
+.user-profile-panel.visible {
+  right: 0;
+}
+
+.user-panel-header {
+  padding: 20px;
+  display: flex;
+  justify-content: flex-end;
+  border-bottom: 1px solid #F0F0F0;
+}
+
+.close-icon {
+  font-size: 20px;
+  color: #6B7280;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.close-icon:hover {
+  color: #1F2937;
+}
+
+.user-panel-content {
+  padding: 24px;
+}
+
+.user-profile-section {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.user-avatar {
+  background: linear-gradient(135deg, #22C55E 0%, #6366F1 100%);
+  color: white;
+  font-size: 32px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.user-name {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1F2937;
+  margin: 0 0 8px 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+.user-email {
+  font-size: 14px;
+  color: #6B7280;
+  margin: 0;
+}
+
+.user-menu-section {
+  margin: 20px 0;
+}
+
+.user-menu-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.user-menu-item:hover {
+  background: #F9FAFB;
+  color: #22C55E;
+}
+
+.menu-icon {
+  font-size: 18px;
+  margin-right: 12px;
+  color: #6B7280;
+}
+
+.user-menu-item:hover .menu-icon {
+  color: #22C55E;
+}
+
+.user-info-section {
+  margin: 20px 0;
+}
+
+.info-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6B7280;
+  margin-bottom: 8px;
+}
+
+.info-value {
+  font-size: 16px;
+  font-weight: 500;
+  color: #1F2937;
+}
+
+.logout-button {
+  margin-top: 24px;
+  height: 48px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+.ant-divider {
+  margin: 20px 0;
+  border-color: #E5E7EB;
+}
+
+/* Scrollbar Styling */
+.user-profile-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.user-profile-panel::-webkit-scrollbar-track {
+  background: #F9FAFB;
+}
+
+.user-profile-panel::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+  border-radius: 3px;
+}
+
+.user-profile-panel::-webkit-scrollbar-thumb:hover {
+  background: #9CA3AF;
+}
+
+@media (max-width: 768px) {
+  .user-profile-panel {
+    width: 100%;
+    right: -100%;
+  }
+}
