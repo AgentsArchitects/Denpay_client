@@ -128,6 +128,38 @@ async def get_current_user(
 
     return user
 
+
+async def require_admin(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    session: AsyncSession = Depends(get_db)
+) -> AuthUser:
+    """
+    Dependency that requires the user to be a WORKFIN_ADMIN.
+    Rejects all other roles with 403 Forbidden.
+    """
+    user = await get_current_user(credentials=credentials, session=session)
+
+    # Check if user has WORKFIN_ADMIN role
+    result = await session.execute(
+        select(UserRoleModel).where(
+            and_(
+                UserRoleModel.user_id == user.user_id,
+                UserRoleModel.role_type == "WORKFIN_ADMIN",
+                UserRoleModel.is_active == True
+            )
+        )
+    )
+    admin_role = result.scalar_one_or_none()
+
+    if not admin_role:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    return user
+
+
 # ============================================================================
 # Authentication Routes
 # ============================================================================

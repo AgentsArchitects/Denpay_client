@@ -50,7 +50,25 @@ class AuthService {
   }
 
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    const token = this.getToken();
+    if (!token) return false;
+
+    try {
+      // Decode JWT payload (base64) and check expiration
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (payload.exp && Date.now() >= payload.exp * 1000) {
+        // Token is expired — clear storage
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        return false;
+      }
+      return true;
+    } catch {
+      // Invalid token format — clear storage
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user');
+      return false;
+    }
   }
 }
 

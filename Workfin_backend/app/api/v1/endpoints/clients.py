@@ -70,13 +70,13 @@ async def get_clients(db: AsyncSession = Depends(get_db)):
                     Invitation.role_type == "CLIENT_ADMIN"
                 )
             )
-            has_pending_invitation = invitation_result.scalar_one_or_none() is not None
+            has_pending_invitation = invitation_result.first() is not None
 
             # Determine status
             if not user_exists and has_pending_invitation:
-                status = "Pending Invite"
+                client_status = "Pending Invite"
             else:
-                status = client.status
+                client_status = client.status
 
             client_list.append(
                 ClientListItem(
@@ -84,7 +84,7 @@ async def get_clients(db: AsyncSession = Depends(get_db)):
                     tenant_id=client.tenant_id,
                     legal_trading_name=client.legal_trading_name,
                     workfin_reference=client.workfin_reference,
-                    status=status,
+                    status=client_status,
                     contact_email=client.contact_email,
                     contact_phone=client.contact_phone,
                     client_type=client.client_type,
