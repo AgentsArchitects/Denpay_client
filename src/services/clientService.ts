@@ -96,6 +96,13 @@ class ClientService {
     );
     return response.data;
   }
+
+  async resendInvitation(clientId: string): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>(
+      `/clients/${clientId}/resend-invitation`
+    );
+    return response.data;
+  }
 }
 
 export default new ClientService();

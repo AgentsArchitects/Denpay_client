@@ -31,13 +31,18 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error: AxiosError) => {
-    // Handle 401 Unauthorized - redirect to login
+    // Handle 401 Unauthorized - token invalid/expired/inactive account → redirect to login
     // But skip redirect for Xero endpoints (they return 401 when not connected)
     const isXeroEndpoint = error.config?.url?.includes('/xero');
     if (error.response?.status === 401 && !isXeroEndpoint) {
       localStorage.removeItem('access_token');
       localStorage.removeItem('user');
       window.location.href = '/login';
+    }
+
+    // Handle 403 Forbidden - authenticated but not authorised (e.g. non-admin hitting admin route)
+    if (error.response?.status === 403) {
+      console.warn('Access denied (403):', (error.response?.data as any)?.detail);
     }
 
     // Handle other errors

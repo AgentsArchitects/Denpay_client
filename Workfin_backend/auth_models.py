@@ -259,3 +259,42 @@ class RolePermission(Base):
 
     def __repr__(self):
         return f"<RolePermission(role='{self.role_type}', permission='{self.permission_name}')>"
+
+
+# ============================================================================
+# Model: PowerBIWorkspace
+# ============================================================================
+
+class PowerBIWorkspace(Base):
+    """
+    Stores Power BI workspace details per tenant.
+    Created automatically when a client is onboarded with Power BI enabled.
+
+    User access is derived from auth.user_roles:
+      - WORKFIN_ADMIN (no tenant_id)  → Admin on workspace
+      - any role with tenant_id = X   → Viewer on workspace for tenant X
+    """
+    __tablename__ = "powerbi_workspaces"
+    __table_args__ = {"schema": AUTH_SCHEMA}
+
+    workspace_id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
+
+    # Tenant this workspace belongs to
+    tenant_id = Column(String(8), nullable=False, index=True)
+
+    # Power BI identifiers
+    powerbi_workspace_guid = Column(String(100), nullable=False, unique=True)
+    workspace_name = Column(String(255), nullable=False)
+
+    # Status
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    # Audit fields
+    created_at = Column(TIMESTAMP, nullable=False, default=datetime.utcnow)
+    created_by = Column(String(8), ForeignKey(f"{AUTH_SCHEMA}.users.user_id", ondelete="SET NULL"), nullable=True)
+
+    # Relationships
+    creator = relationship("AuthUser", foreign_keys=[created_by])
+
+    def __repr__(self):
+        return f"<PowerBIWorkspace(tenant='{self.tenant_id}', name='{self.workspace_name}', guid='{self.powerbi_workspace_guid}')>"

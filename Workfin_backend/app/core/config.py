@@ -40,6 +40,14 @@ class Settings(BaseSettings):
     AZURE_STORAGE_ACCOUNT_NAME: str = "synwworkfinlivesynapse"
     AZURE_STORAGE_CONTAINER_NAME: str = "a4de6dd-esk"
 
+    # Power BI Settings
+    POWERBI_TENANT_ID: str = ""
+    POWERBI_CLIENT_ID: str = ""
+    POWERBI_CLIENT_SECRET: str = ""
+    POWERBI_AUTHORITY_URL: str = "https://login.microsoftonline.com/"
+    POWERBI_SCOPE: str = "https://analysis.windows.net/powerbi/api/.default"
+    POWERBI_API_URL: str = "https://api.powerbi.com/v1.0/myorg"
+
     @field_validator('CORS_ORIGINS', mode='before')
     @classmethod
     def parse_cors_origins(cls, v):

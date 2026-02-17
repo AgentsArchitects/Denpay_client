@@ -19,3 +19,4 @@ azure-identity
 pandas
 pyarrow
 fastparquet
+PyJWT==2.8.0

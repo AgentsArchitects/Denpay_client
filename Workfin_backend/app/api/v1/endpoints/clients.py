@@ -27,6 +27,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 from auth_utils import create_invitation, get_current_user_from_token
 from app.services.email_service import email_service
+from app.services.powerbi_service import create_workspace_for_client
 
 router = APIRouter()
 
@@ -291,6 +292,42 @@ async def create_client(
         # Commit all changes
         await db.commit()
 
+        # Step 8: Create Power BI workspace (only if Power BI is enabled for this client)
+        if client.feature_powerbi_enabled:
+            from auth_models import AuthUser, UserRole as AuthUserRole, PowerBIWorkspace
+            from sqlalchemy import select as sa_select
+
+            # Fetch all WORKFIN_ADMIN user emails — only admins get workspace Admin access
+            admin_result = await db.execute(
+                sa_select(AuthUser.email)
+                .join(AuthUserRole, AuthUserRole.user_id == AuthUser.user_id)
+                .where(
+                    AuthUserRole.role_type == "WORKFIN_ADMIN",
+                    AuthUserRole.is_active == True,
+                    AuthUser.is_active == True
+                )
+            )
+            admin_emails = [row[0] for row in admin_result.all()]
+
+            # All other users access reports via embedded tokens with RLS — no workspace membership needed
+            powerbi_workspace_guid = await create_workspace_for_client(
+                tenant_id=new_client.tenant_id,
+                legal_trading_name=new_client.legal_trading_name,
+                admin_users=admin_emails,
+                other_users=[],
+            )
+
+            # Save workspace record to auth.powerbi_workspaces
+            workspace_record = PowerBIWorkspace(
+                tenant_id=new_client.tenant_id,
+                powerbi_workspace_guid=powerbi_workspace_guid,
+                workspace_name=f"{new_client.legal_trading_name}_{new_client.tenant_id}",
+                is_active=True,
+                created_by=invited_by_user_id
+            )
+            db.add(workspace_record)
+            await db.commit()
+
         # Reload with all relationships
         await db.refresh(new_client)
         result = await db.execute(
@@ -533,6 +570,83 @@ async def create_client_user(client_id: str, user_data: dict, db: AsyncSession =
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create user: {str(e)}"
+        )
+
+
+@router.post("/{client_id}/resend-invitation", status_code=status.HTTP_200_OK)
+async def resend_invitation(
+    client_id: str,
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    """Invalidate the existing pending invitation and send a fresh one to the client's contact email."""
+    try:
+        from auth_models import AuthUser, Invitation
+
+        # Get the client
+        result = await db.execute(select(Client).where(Client.tenant_id == client_id))
+        client = result.scalar_one_or_none()
+        if not client:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+
+        # Check client has not already accepted the invitation
+        user_result = await db.execute(select(AuthUser).where(AuthUser.email == client.contact_email))
+        if user_result.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Client has already accepted the invitation and created an account"
+            )
+
+        # Get the current admin sending the resend
+        authorization = request.headers.get("authorization")
+        try:
+            invited_by_user_id = get_current_user_from_token(authorization)
+        except Exception as auth_err:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Authentication failed: {str(auth_err)}")
+
+        # Invalidate existing pending invitations for this email
+        existing_result = await db.execute(
+            select(Invitation).where(
+                Invitation.email == client.contact_email,
+                Invitation.is_used == False,
+                Invitation.role_type == "CLIENT_ADMIN"
+            )
+        )
+        for old_invitation in existing_result.scalars().all():
+            old_invitation.is_used = True
+        await db.flush()
+
+        # Create a fresh invitation
+        new_token = await create_invitation(
+            session=db,
+            email=client.contact_email,
+            role_type="CLIENT_ADMIN",
+            invited_by_user_id=invited_by_user_id,
+            first_name=client.contact_first_name,
+            last_name=client.contact_last_name,
+            tenant_id=client.tenant_id
+        )
+
+        # Send the email
+        await email_service.send_client_invitation(
+            to_email=client.contact_email,
+            first_name=client.contact_first_name or "",
+            last_name=client.contact_last_name or "",
+            invitation_token=new_token,
+            client_name=client.legal_trading_name
+        )
+
+        await db.commit()
+        return {"message": f"Invitation resent successfully to {client.contact_email}"}
+
+    except HTTPException:
+        await db.rollback()
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to resend invitation: {str(e)}"
         )
 
 

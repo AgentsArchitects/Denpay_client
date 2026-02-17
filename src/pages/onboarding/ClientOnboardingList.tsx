@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Input, Button, Breadcrumb, Tag, message, Modal } from 'antd';
-import { SearchOutlined, PlusOutlined, UserOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, UndoOutlined } from '@ant-design/icons';
+import { SearchOutlined, PlusOutlined, UserOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, UndoOutlined, MailOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { Link, useNavigate } from 'react-router-dom';
 import clientService from '../../services/clientService';
@@ -12,7 +12,7 @@ interface ClientData {
   tradingName: string;
   entityReference: string;
   date: string;
-  status: 'Active' | 'Inactive';
+  status: 'Active' | 'Inactive' | 'Pending Invite';
 }
 
 interface ClientFromAPI {
@@ -49,7 +49,7 @@ const ClientOnboardingList: React.FC = () => {
         tradingName: client.legal_trading_name,
         entityReference: client.workfin_reference,
         date: formatDate(client.created_at),
-        status: client.status as 'Active' | 'Inactive'
+        status: client.status as 'Active' | 'Inactive' | 'Pending Invite'
       }));
 
       setClients(transformedData);
@@ -94,6 +94,25 @@ const ClientOnboardingList: React.FC = () => {
     });
   };
 
+  const handleResendInvitation = (clientId: string, clientName: string) => {
+    Modal.confirm({
+      title: 'Resend Invitation',
+      icon: <MailOutlined />,
+      content: `Resend invitation email to the contact for "${clientName}"?`,
+      okText: 'Resend',
+      okType: 'primary',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          await clientService.resendInvitation(clientId);
+          message.success('Invitation email resent successfully');
+        } catch (error: any) {
+          message.error(error?.response?.data?.detail || 'Failed to resend invitation');
+        }
+      }
+    });
+  };
+
   const columns: ColumnsType<ClientData> = [
     {
       title: 'Tenant ID',
@@ -126,16 +145,15 @@ const ClientOnboardingList: React.FC = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => (
-        <Tag color={status === 'Active' ? 'success' : 'error'} className="status-tag">
-          {status}
-        </Tag>
-      ),
+      render: (status: string) => {
+        const color = status === 'Active' ? 'success' : status === 'Pending Invite' ? 'warning' : 'error';
+        return <Tag color={color} className="status-tag">{status}</Tag>;
+      },
     },
     {
       title: 'Action',
       key: 'action',
-      width: 120,
+      width: 150,
       align: 'center',
       render: (_, record) => (
         <div className="action-buttons">
@@ -151,11 +169,20 @@ const ClientOnboardingList: React.FC = () => {
             className="action-btn edit-btn"
             onClick={() => navigate(`/onboarding/edit/${record.key}`)}
           />
+          {record.status === 'Pending Invite' && (
+            <Button
+              type="text"
+              icon={<MailOutlined />}
+              className="action-btn"
+              title="Resend invitation email"
+              onClick={() => handleResendInvitation(record.key, record.tradingName)}
+            />
+          )}
           <Button
             type="text"
             icon={record.status === 'Active' ? <DeleteOutlined /> : <UndoOutlined />}
             className={`action-btn ${record.status === 'Active' ? 'delete-btn' : 'restore-btn'}`}
-            onClick={() => handleStatusToggle(record.key, record.tradingName, record.status)}
+            onClick={() => handleStatusToggle(record.key, record.tradingName, record.status as 'Active' | 'Inactive')}
           />
         </div>
       ),
