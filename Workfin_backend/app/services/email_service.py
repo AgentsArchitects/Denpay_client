@@ -153,7 +153,7 @@ class EmailService:
                         <p style="margin: 5px 0;"><strong>Username:</strong> {to_email}</p>
                         <p style="margin: 5px 0;"><strong>Password generation/Account Activation Link:</strong></p>
                         <div style="text-align: center; margin-top: 15px;">
-                            <a href="{accept_url}" class="button">Activate Account & Set Password</a>
+                            <a href="{accept_url}" style="display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; font-family: Arial, sans-serif;">Activate Account &amp; Set Password</a>
                         </div>
                     </div>
 
@@ -271,7 +271,7 @@ Customer Support Team
 
                     <p>Click the button below to accept your invitation and set up your account:</p>
                     <div style="text-align: center;">
-                        <a href="{accept_url}" class="button">Accept Invitation & Set Password</a>
+                        <a href="{accept_url}" style="display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; font-family: Arial, sans-serif;">Accept Invitation &amp; Set Password</a>
                     </div>
                     <p>Or copy and paste this link into your browser:</p>
                     <p style="word-break: break-all; color: #4F46E5;">{accept_url}</p>
@@ -382,7 +382,7 @@ Customer Support Team
 
                     <p>Click the button below to accept your invitation and create your account:</p>
                     <div style="text-align: center;">
-                        <a href="{accept_url}" class="button">Accept Invitation</a>
+                        <a href="{accept_url}" style="display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; font-family: Arial, sans-serif;">Accept Invitation</a>
                     </div>
                     <p>Or copy and paste this link into your browser:</p>
                     <p style="word-break: break-all; color: #4F46E5;">{accept_url}</p>
@@ -501,7 +501,7 @@ Customer Support Team
 
                     <p>Click the button below to accept your invitation and set up your account:</p>
                     <div style="text-align: center;">
-                        <a href="{accept_url}" class="button">Accept Invitation & Create Account</a>
+                        <a href="{accept_url}" style="display: inline-block; padding: 12px 24px; background-color: #10b981; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; font-family: Arial, sans-serif;">Accept Invitation &amp; Create Account</a>
                     </div>
                     <p>Or copy and paste this link into your browser:</p>
                     <p style="word-break: break-all; color: #10b981;">{accept_url}</p>
