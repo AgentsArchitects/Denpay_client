@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import authService from '../../services/authService';
 import { Avatar, Divider, Button } from 'antd';
 import {
   HomeOutlined,
@@ -70,7 +71,13 @@ const UserProfilePanel: React.FC<UserProfilePanelProps> = ({ visible, onClose })
       .join(' ');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user');
+    }
     navigate('/login');
   };
 

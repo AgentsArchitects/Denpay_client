@@ -543,6 +543,70 @@ Customer Support Team
 
         return await self.send_email(to_email, to_name, subject, html_content, plain_text)
 
+    async def send_password_reset_email(
+        self,
+        to_email: str,
+        to_name: str,
+        reset_token: str
+    ) -> bool:
+        """
+        Send password reset email with a secure reset link.
+        Token expires in 1 hour.
+        """
+        reset_url = f"{self.frontend_url}/auth/reset-password?token={reset_token}"
+
+        subject = "Password Reset - WorkFin"
+
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="background-color: #4F46E5; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+                    <h1 style="margin: 0; font-size: 24px;">WorkFin</h1>
+                </div>
+                <div style="background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
+                    <h2 style="color: #1f2937; margin-top: 0;">Password Reset Request</h2>
+                    <p>Hi {to_name},</p>
+                    <p>We received a request to reset your password. Click the button below to set a new password:</p>
+
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{reset_url}" style="display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; font-family: Arial, sans-serif;">Reset Password</a>
+                    </div>
+
+                    <p>Or copy and paste this link into your browser:</p>
+                    <p style="word-break: break-all; color: #4F46E5;">{reset_url}</p>
+
+                    <div style="background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                        <p style="margin: 0; color: #92400E;"><strong>This link will expire in 1 hour.</strong> If you did not request a password reset, please ignore this email — your password will remain unchanged.</p>
+                    </div>
+                </div>
+                <div style="text-align: center; padding: 20px; font-size: 12px; color: #6b7280;">
+                    <p>&copy; 2026 WorkFin. All rights reserved.</p>
+                    <p>Need help? Contact support@workfin.co.uk</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        plain_text = f"""
+Password Reset Request
+
+Hi {to_name},
+
+We received a request to reset your password. Click the link below to set a new password:
+
+{reset_url}
+
+This link will expire in 1 hour. If you did not request a password reset, please ignore this email.
+
+© 2026 WorkFin. All rights reserved.
+Need help? Contact support@workfin.co.uk
+        """
+
+        return await self.send_email(to_email, to_name, subject, html_content, plain_text)
+
     # Legacy method name for backward compatibility
     async def send_client_invitation(
         self,

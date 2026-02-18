@@ -28,7 +28,8 @@ from auth_utils import (
     generate_user_id
 )
 from app.db.database import get_db
-from app.schemas.user import AcceptInvitationRequest, AcceptInvitationResponse
+from app.schemas.user import AcceptInvitationRequest, AcceptInvitationResponse, ForgotPasswordRequest, ResetPasswordRequest
+from app.services.email_service import email_service
 import uuid
 
 # Create router
@@ -622,3 +623,137 @@ async def accept_invitation(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to accept invitation: {str(e)}"
         )
+
+
+@router.post("/forgot-password")
+async def forgot_password(
+    request_data: ForgotPasswordRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Request a password reset email.
+    Always returns success to prevent email enumeration.
+    """
+    from auth_models import Token as TokenModel
+    from auth_utils import generate_secure_token
+    from datetime import timedelta
+
+    # Always return the same message regardless of whether user exists
+    success_message = "If an account exists with this email, a password reset link has been sent."
+
+    # Look up user
+    result = await session.execute(
+        select(AuthUser).where(AuthUser.email == request_data.email)
+    )
+    user = result.scalar_one_or_none()
+
+    if not user or not user.is_active:
+        return {"message": success_message}
+
+    # Invalidate any existing unused PASSWORD_RESET tokens for this user
+    existing_tokens = await session.execute(
+        select(TokenModel).where(
+            and_(
+                TokenModel.user_id == user.user_id,
+                TokenModel.token_type == "PASSWORD_RESET",
+                TokenModel.is_used == False,
+                TokenModel.is_revoked == False
+            )
+        )
+    )
+    for old_token in existing_tokens.scalars().all():
+        old_token.is_revoked = True
+        old_token.revoked_at = datetime.utcnow()
+
+    # Generate and store new reset token
+    reset_token = generate_secure_token()
+    token_record = TokenModel(
+        user_id=user.user_id,
+        token=reset_token,
+        token_type="PASSWORD_RESET",
+        ip_address=request.client.host if request.client else None,
+        expires_at=datetime.utcnow() + timedelta(hours=1),
+        is_used=False,
+        is_revoked=False
+    )
+    session.add(token_record)
+    await session.commit()
+
+    # Send reset email
+    to_name = f"{user.first_name or ''} {user.last_name or ''}".strip() or user.email
+    await email_service.send_password_reset_email(
+        to_email=user.email,
+        to_name=to_name,
+        reset_token=reset_token
+    )
+
+    return {"message": success_message}
+
+
+@router.post("/reset-password")
+async def reset_password(
+    request_data: ResetPasswordRequest,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Reset password using a valid reset token.
+    """
+    from auth_models import Token as TokenModel
+
+    # Validate passwords match
+    if request_data.new_password != request_data.confirm_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Passwords do not match"
+        )
+
+    # Look up the token
+    result = await session.execute(
+        select(TokenModel).where(
+            and_(
+                TokenModel.token == request_data.token,
+                TokenModel.token_type == "PASSWORD_RESET",
+                TokenModel.is_used == False,
+                TokenModel.is_revoked == False
+            )
+        )
+    )
+    token_record = result.scalar_one_or_none()
+
+    if not token_record:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token"
+        )
+
+    # Check expiry
+    if token_record.expires_at < datetime.utcnow():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Reset token has expired. Please request a new one."
+        )
+
+    # Get the user
+    result = await session.execute(
+        select(AuthUser).where(AuthUser.user_id == token_record.user_id)
+    )
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User account not found"
+        )
+
+    # Update password
+    user.password_hash = hash_password(request_data.new_password)
+    user.updated_at = datetime.utcnow()
+
+    # Mark token as used
+    token_record.is_used = True
+    token_record.used_at = datetime.utcnow()
+
+    await session.commit()
+
+    return {"message": "Password reset successfully. You can now log in with your new password."}

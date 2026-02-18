@@ -78,3 +78,13 @@ class AcceptInvitationResponse(BaseModel):
     message: str
     user_id: Optional[str] = None
     email: Optional[str] = None
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str = Field(..., min_length=8, description="Password must be at least 8 characters")
+    confirm_password: str

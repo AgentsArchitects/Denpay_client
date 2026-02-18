@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import authService from '../../services/authService';
 import { Tooltip } from 'antd';
 import {
   HomeOutlined,
@@ -174,7 +175,14 @@ const SidebarNav: React.FC<SidebarNavProps> = ({ collapsed }) => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch {
+      // Clear storage even if API call fails
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user');
+    }
     navigate('/login');
   };
 

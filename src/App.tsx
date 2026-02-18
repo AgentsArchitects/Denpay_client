@@ -2,6 +2,8 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/auth/LoginPage';
 import AcceptInvitation from './pages/auth/AcceptInvitation';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import Practice360 from './pages/dashboard/Practice360';
 import XeroList from './pages/xero/XeroList';
 import XeroAccounts from './pages/xero/XeroAccounts';
@@ -45,6 +47,8 @@ const App: React.FC = () => {
         authService.isAuthenticated() ? <Navigate to="/dashboard" replace /> : <LoginPage />
       } />
       <Route path="/auth/accept-invitation" element={<AcceptInvitation />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
 
       {/* Protected routes - requires authentication */}
       <Route element={<ProtectedRoute />}>
