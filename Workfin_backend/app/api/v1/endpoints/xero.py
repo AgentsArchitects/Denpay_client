@@ -13,6 +13,8 @@ from decimal import Decimal
 import uuid
 import re
 
+from app.core.config import settings
+
 
 def parse_xero_date(xero_date: Any) -> Optional[date]:
     """
@@ -96,6 +98,12 @@ from app.db.xero_models import (
 from app.services.xero_service import xero_service
 
 router = APIRouter()
+public_router = APIRouter()  # No auth - for OAuth callback
+
+
+def _connected_tenants_subquery():
+    """Subquery of tenant_ids that have active tokens (i.e. currently connected)."""
+    return select(XeroToken.tenant_id)
 
 
 async def _get_tenant_info(db: AsyncSession, tenant_id: str) -> dict:
@@ -124,7 +132,7 @@ async def authorize_xero(client_id: Optional[str] = None):
     return {"authorization_url": auth_url}
 
 
-@router.get("/callback/")
+@public_router.get("/callback")
 async def xero_callback(
     code: str = Query(..., description="Authorization code from Xero"),
     state: str = Query(default="default", description="State parameter"),
@@ -238,7 +246,8 @@ async def xero_callback(
                             token_expires_at=tokens["expires_at"],
                             status="CONNECTED",
                             connected_at=datetime.now(),
-                            tenant_id=client_tenant_id
+                            tenant_id=client_tenant_id,
+                            tenant_name=client_tenant_name
                         )
                         db.add(new_xero_conn)
                         await db.flush()  # Get the auto-generated xero_tenant_id
@@ -265,13 +274,15 @@ async def xero_callback(
             # Don't raise - the OAuth flow succeeded
 
         # Redirect to frontend success page
-        return RedirectResponse(url="https://api-uat-uk-workfin-02.azurewebsites.net/xero/list?xero=connected")
+        frontend_url = settings.FRONTEND_URL.rstrip("/")
+        return RedirectResponse(url=f"{frontend_url}/xero/list?xero=connected")
 
     except Exception as e:
         # Only redirect with error if the OAuth flow itself failed
         error_msg = str(e)
         print(f"Xero callback error: {error_msg}")
-        return RedirectResponse(url=f"https://api-uat-uk-workfin-02.azurewebsites.net/xero/list?xero=error&message={error_msg}")
+        frontend_url = settings.FRONTEND_URL.rstrip("/")
+        return RedirectResponse(url=f"{frontend_url}/xero/list?xero=error&message={error_msg}")
 
 
 @router.get("/tenants/", response_model=List[XeroTenant])
@@ -361,9 +372,15 @@ async def disconnect_xero(db: AsyncSession = Depends(get_db)):
     """Disconnect from Xero and clear tokens"""
     xero_service.clear_tokens()
 
-    # Optionally clear tokens from database
-    # await db.execute(delete(XeroToken))
-    # await db.commit()
+    # Clear tokens from database so expired tokens aren't restored
+    await db.execute(delete(XeroToken))
+
+    # Clear Xero entries from pms_connections so they don't appear in tenant list
+    await db.execute(
+        delete(PMSConnection).where(PMSConnection.integration_type == "XERO")
+    )
+
+    await db.commit()
 
     return {"message": "Successfully disconnected from Xero"}
 
@@ -1507,21 +1524,19 @@ async def get_xero_accounts(
 ):
     """Get synced accounts from database"""
     try:
-        print(f"Getting accounts for tenant_id: {tenant_id}, page: {page}, page_size: {page_size}")
+        connected = _connected_tenants_subquery()
 
-        query = select(XeroAccount)
+        query = select(XeroAccount).where(XeroAccount.tenant_id.in_(connected))
         if tenant_id:
             query = query.where(XeroAccount.tenant_id == tenant_id)
         query = query.order_by(XeroAccount.code, XeroAccount.name)
 
         # Get total count
-        count_query = select(XeroAccount)
+        count_query = select(XeroAccount).where(XeroAccount.tenant_id.in_(connected))
         if tenant_id:
             count_query = count_query.where(XeroAccount.tenant_id == tenant_id)
         count_result = await db.execute(count_query)
         total = len(count_result.scalars().all())
-
-        print(f"Total accounts found: {total}")
 
         # Apply pagination
         offset = (page - 1) * page_size
@@ -1529,8 +1544,6 @@ async def get_xero_accounts(
 
         result = await db.execute(query)
         accounts = result.scalars().all()
-
-        print(f"Retrieved {len(accounts)} accounts for current page")
 
         response_data = {
             "data": [
@@ -1558,13 +1571,9 @@ async def get_xero_accounts(
             "total_pages": (total + page_size - 1) // page_size
         }
 
-        print(f"Successfully prepared response with {len(response_data['data'])} accounts")
         return response_data
 
     except Exception as e:
-        import traceback
-        print(f"ERROR in get_xero_accounts: {str(e)}")
-        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch accounts: {str(e)}"
@@ -1582,7 +1591,9 @@ async def get_xero_contacts(
 ):
     """Get synced contacts from database"""
     try:
-        query = select(XeroContact)
+        connected = _connected_tenants_subquery()
+
+        query = select(XeroContact).where(XeroContact.tenant_id.in_(connected))
         if tenant_id:
             query = query.where(XeroContact.tenant_id == tenant_id)
         if is_customer is not None:
@@ -1592,7 +1603,7 @@ async def get_xero_contacts(
         query = query.order_by(XeroContact.name)
 
         # Get total count
-        count_query = select(XeroContact)
+        count_query = select(XeroContact).where(XeroContact.tenant_id.in_(connected))
         if tenant_id:
             count_query = count_query.where(XeroContact.tenant_id == tenant_id)
         if is_customer is not None:
@@ -1653,7 +1664,9 @@ async def get_xero_invoices(
 ):
     """Get synced invoices from database"""
     try:
-        query = select(XeroInvoice)
+        connected = _connected_tenants_subquery()
+
+        query = select(XeroInvoice).where(XeroInvoice.tenant_id.in_(connected))
         if tenant_id:
             query = query.where(XeroInvoice.tenant_id == tenant_id)
         if status_filter:
@@ -1663,7 +1676,7 @@ async def get_xero_invoices(
         query = query.order_by(XeroInvoice.date.desc())
 
         # Get total count
-        count_query = select(XeroInvoice)
+        count_query = select(XeroInvoice).where(XeroInvoice.tenant_id.in_(connected))
         if tenant_id:
             count_query = count_query.where(XeroInvoice.tenant_id == tenant_id)
         if status_filter:
@@ -1724,13 +1737,15 @@ async def get_xero_credit_notes(
 ):
     """Get synced credit notes from database"""
     try:
-        query = select(XeroCreditNote)
+        connected = _connected_tenants_subquery()
+
+        query = select(XeroCreditNote).where(XeroCreditNote.tenant_id.in_(connected))
         if tenant_id:
             query = query.where(XeroCreditNote.tenant_id == tenant_id)
         query = query.order_by(XeroCreditNote.date.desc())
 
         # Get total count
-        count_query = select(XeroCreditNote)
+        count_query = select(XeroCreditNote).where(XeroCreditNote.tenant_id.in_(connected))
         if tenant_id:
             count_query = count_query.where(XeroCreditNote.tenant_id == tenant_id)
         count_result = await db.execute(count_query)
@@ -1785,13 +1800,15 @@ async def get_xero_payments(
 ):
     """Get synced payments from database"""
     try:
-        query = select(XeroPayment)
+        connected = _connected_tenants_subquery()
+
+        query = select(XeroPayment).where(XeroPayment.tenant_id.in_(connected))
         if tenant_id:
             query = query.where(XeroPayment.tenant_id == tenant_id)
         query = query.order_by(XeroPayment.date.desc())
 
         # Get total count
-        count_query = select(XeroPayment)
+        count_query = select(XeroPayment).where(XeroPayment.tenant_id.in_(connected))
         if tenant_id:
             count_query = count_query.where(XeroPayment.tenant_id == tenant_id)
         count_result = await db.execute(count_query)
@@ -1843,13 +1860,15 @@ async def get_xero_bank_transactions(
 ):
     """Get synced bank transactions from database"""
     try:
-        query = select(XeroBankTransaction)
+        connected = _connected_tenants_subquery()
+
+        query = select(XeroBankTransaction).where(XeroBankTransaction.tenant_id.in_(connected))
         if tenant_id:
             query = query.where(XeroBankTransaction.tenant_id == tenant_id)
         query = query.order_by(XeroBankTransaction.date.desc())
 
         # Get total count
-        count_query = select(XeroBankTransaction)
+        count_query = select(XeroBankTransaction).where(XeroBankTransaction.tenant_id.in_(connected))
         if tenant_id:
             count_query = count_query.where(XeroBankTransaction.tenant_id == tenant_id)
         count_result = await db.execute(count_query)
@@ -1903,13 +1922,15 @@ async def get_xero_journals(
 ):
     """Get synced journals from database"""
     try:
-        query = select(XeroJournal)
+        connected = _connected_tenants_subquery()
+
+        query = select(XeroJournal).where(XeroJournal.tenant_id.in_(connected))
         if tenant_id:
             query = query.where(XeroJournal.tenant_id == tenant_id)
         query = query.order_by(XeroJournal.journal_date.desc())
 
         # Get total count
-        count_query = select(XeroJournal)
+        count_query = select(XeroJournal).where(XeroJournal.tenant_id.in_(connected))
         if tenant_id:
             count_query = count_query.where(XeroJournal.tenant_id == tenant_id)
         count_result = await db.execute(count_query)
@@ -1960,7 +1981,9 @@ async def get_xero_journal_lines(
 ):
     """Get synced journal lines from database"""
     try:
-        query = select(XeroJournalLine)
+        connected = _connected_tenants_subquery()
+
+        query = select(XeroJournalLine).where(XeroJournalLine.tenant_id.in_(connected))
         if tenant_id:
             query = query.where(XeroJournalLine.tenant_id == tenant_id)
         if journal_id:
@@ -1968,7 +1991,7 @@ async def get_xero_journal_lines(
         query = query.order_by(XeroJournalLine.synced_at.desc())
 
         # Get total count
-        count_query = select(XeroJournalLine)
+        count_query = select(XeroJournalLine).where(XeroJournalLine.tenant_id.in_(connected))
         if tenant_id:
             count_query = count_query.where(XeroJournalLine.tenant_id == tenant_id)
         if journal_id:
@@ -2027,13 +2050,15 @@ async def get_xero_contact_groups(
 ):
     """Get synced contact groups from database"""
     try:
-        query = select(XeroContactGroup)
+        connected = _connected_tenants_subquery()
+
+        query = select(XeroContactGroup).where(XeroContactGroup.tenant_id.in_(connected))
         if tenant_id:
             query = query.where(XeroContactGroup.tenant_id == tenant_id)
         query = query.order_by(XeroContactGroup.name)
 
         # Get total count
-        count_query = select(XeroContactGroup)
+        count_query = select(XeroContactGroup).where(XeroContactGroup.tenant_id.in_(connected))
         if tenant_id:
             count_query = count_query.where(XeroContactGroup.tenant_id == tenant_id)
         count_result = await db.execute(count_query)
@@ -2081,13 +2106,15 @@ async def get_xero_bank_transfers(
 ):
     """Get synced bank transfers from database"""
     try:
-        query = select(XeroBankTransfer)
+        connected = _connected_tenants_subquery()
+
+        query = select(XeroBankTransfer).where(XeroBankTransfer.tenant_id.in_(connected))
         if tenant_id:
             query = query.where(XeroBankTransfer.tenant_id == tenant_id)
         query = query.order_by(XeroBankTransfer.date.desc())
 
         # Get total count
-        count_query = select(XeroBankTransfer)
+        count_query = select(XeroBankTransfer).where(XeroBankTransfer.tenant_id.in_(connected))
         if tenant_id:
             count_query = count_query.where(XeroBankTransfer.tenant_id == tenant_id)
         count_result = await db.execute(count_query)

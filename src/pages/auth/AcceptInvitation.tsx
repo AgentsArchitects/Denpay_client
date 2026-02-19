@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, Form, Input, Button, message, Spin, Alert } from 'antd';
 import { LockOutlined } from '@ant-design/icons';
 import axios from 'axios';
+import { CLIENT_PORTAL_URL } from '../../config/constants';
 import './AcceptInvitation.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -67,7 +68,7 @@ const AcceptInvitation: React.FC = () => {
           // CLIENT_ADMIN and CLINICIAN users go to Client Portal
           // WORKFIN_ADMIN users can login to onboarding portal
           if (userType === 'client_admin' || userType === 'clinician') {
-            window.location.href = 'https://api-uat-uk-workfin-03.azurewebsites.net';
+            window.location.href = CLIENT_PORTAL_URL;
           } else {
             navigate('/login');
           }

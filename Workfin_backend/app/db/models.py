@@ -325,3 +325,4 @@ class XeroConnection(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
     tenant_id = Column(String(8), ForeignKey(f'{SCHEMA}.clients.tenant_id'), nullable=False)
+    tenant_name = Column(String(255), nullable=True)  # Client's legal_trading_name

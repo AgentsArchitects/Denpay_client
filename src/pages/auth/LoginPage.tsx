@@ -3,7 +3,7 @@ import { Button, Form, Input, Alert, Divider, message } from 'antd';
 import { GoogleOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../../services/api';
-import { API_ENDPOINTS } from '../../config/constants';
+import { API_ENDPOINTS, CLIENT_PORTAL_URL } from '../../config/constants';
 import './LoginPage.css';
 
 const LoginPage: React.FC = () => {
@@ -38,7 +38,7 @@ const LoginPage: React.FC = () => {
       if (userRole === 'CLIENT_ADMIN' || userRole === 'CLINICIAN' || userRole === 'Clinician') {
         message.info('Redirecting to Client Portal...');
         setTimeout(() => {
-          window.location.href = 'https://api-uat-uk-workfin-03.azurewebsites.net';
+          window.location.href = CLIENT_PORTAL_URL;
         }, 1000);
       } else {
         message.success('Login successful!');
@@ -53,7 +53,7 @@ const LoginPage: React.FC = () => {
         setError('This portal is for WorkFin Admin users only. Redirecting you to the Client Portal...');
         setLoading(false);
         window.setTimeout(() => {
-          window.location.replace('https://api-uat-uk-workfin-03.azurewebsites.net');
+          window.location.replace(CLIENT_PORTAL_URL);
         }, 2000);
         return;
       }

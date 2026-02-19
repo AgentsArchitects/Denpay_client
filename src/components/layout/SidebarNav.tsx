@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import authService from '../../services/authService';
+import { CLIENT_PORTAL_URL } from '../../config/constants';
 import { Tooltip } from 'antd';
 import {
   HomeOutlined,
@@ -55,7 +56,7 @@ const SidebarNav: React.FC<SidebarNavProps> = ({ collapsed }) => {
     {
       section: 'CLIENT PORTAL',
       items: [
-        { key: '/client-portal', icon: <DollarOutlined />, label: 'Go To Client Portal', external: true, externalUrl: 'https://api-uat-uk-workfin-03.azurewebsites.net' }
+        { key: '/client-portal', icon: <DollarOutlined />, label: 'Go To Client Portal', external: true, externalUrl: CLIENT_PORTAL_URL }
       ]
     },
     {

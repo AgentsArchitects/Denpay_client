@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Input, Select, Button, Tabs, Dropdown, Breadcrumb, message, Tag } from 'antd';
-import { SearchOutlined, PlusOutlined, PrinterOutlined, DownloadOutlined, UploadOutlined, MoreOutlined, LoadingOutlined, SyncOutlined } from '@ant-design/icons';
+import { Card, Table, Input, Select, Button, Tabs, Dropdown, Breadcrumb, message, Tag, Modal, Alert } from 'antd';
+import { SearchOutlined, PlusOutlined, PrinterOutlined, DownloadOutlined, UploadOutlined, MoreOutlined, LoadingOutlined, SyncOutlined, DisconnectOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { Link, useSearchParams } from 'react-router-dom';
 import xeroService from '../../services/xeroService';
@@ -25,6 +25,7 @@ const XeroList: React.FC = () => {
   const [connecting, setConnecting] = useState(false);
   const [_loading, setLoading] = useState(false);
   const [data, setData] = useState<XeroIntegration[]>([]);
+  const [connectionError, setConnectionError] = useState(false);
 
   // Fetch clients and tenants on mount
   useEffect(() => {
@@ -85,6 +86,7 @@ const XeroList: React.FC = () => {
         status: 'Active' as const,
       }));
       setData(integrations);
+      setConnectionError(false);
     } catch (error: any) {
       // Retry once after a short delay (handles transient DB issues)
       if (retryCount === 0 && error?.status !== 401) {
@@ -93,6 +95,11 @@ const XeroList: React.FC = () => {
       }
       if (error?.status !== 401) {
         console.error('Failed to fetch tenants:', error);
+      }
+      // Detect invalid_grant or token refresh failures
+      const errorMsg = error?.message || error?.data?.detail || '';
+      if (errorMsg.includes('invalid_grant') || errorMsg.includes('Token refresh failed')) {
+        setConnectionError(true);
       }
       setData([]);
     } finally {
@@ -125,6 +132,31 @@ const XeroList: React.FC = () => {
     }
   };
 
+  const performDisconnect = async () => {
+    try {
+      message.loading({ content: 'Disconnecting from Xero...', key: 'disconnect' });
+      await xeroService.disconnect();
+      message.success({ content: 'Successfully disconnected from Xero', key: 'disconnect' });
+      setConnectionError(false);
+      fetchTenants();
+    } catch (error) {
+      message.error({ content: 'Failed to disconnect from Xero', key: 'disconnect' });
+    }
+  };
+
+  const handleDisconnect = (record?: XeroIntegration) => {
+    Modal.confirm({
+      title: 'Disconnect Xero',
+      content: record
+        ? `Are you sure you want to disconnect "${record.integrationName}" from Xero? You will need to re-authorize to sync data again.`
+        : 'Are you sure you want to disconnect from Xero? You will need to re-authorize to sync data again.',
+      okText: 'Disconnect',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: performDisconnect,
+    });
+  };
+
   const clientOptions = clients.map((c: any) => ({
     value: c.id || '',
     label: c.legal_client_trading_name || c.legal_trading_name || c.id,
@@ -152,6 +184,17 @@ const XeroList: React.FC = () => {
       key: 'export',
       icon: <DownloadOutlined />,
       label: 'Export',
+    },
+    {
+      type: 'divider' as const,
+      key: 'divider',
+    },
+    {
+      key: 'disconnect',
+      icon: <DisconnectOutlined />,
+      label: 'Disconnect',
+      danger: true,
+      onClick: () => handleDisconnect(record),
     }
   ];
 
@@ -261,6 +304,16 @@ const XeroList: React.FC = () => {
               </Option>
             ))}
           </Select>
+          {connectionError && (
+            <Button
+              danger
+              icon={<DisconnectOutlined />}
+              size="large"
+              onClick={() => handleDisconnect()}
+            >
+              Disconnect
+            </Button>
+          )}
           <Button
             type="primary"
             icon={connecting ? <LoadingOutlined /> : <PlusOutlined />}
@@ -273,6 +326,16 @@ const XeroList: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {connectionError && (
+        <Alert
+          message="Xero Connection Expired"
+          description="Your Xero authorization has expired. Please disconnect and reconnect to Xero."
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
 
       {/* Main Content Card */}
       <Card className="xero-list-card">

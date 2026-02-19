@@ -1,10 +1,11 @@
-# Database Configuration - Session Pooler (Working)
+# Database Configuration - Local/Supabase
 DATABASE_URL=postgresql+asyncpg://postgres.ehaukxpafptcaqooltqw:Base_RJP_Work01@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres
 
 # JWT Configuration
-SECRET_KEY=your-secret-key-change-this-in-production-please-use-strong-key
-ALGORITHM=HS256
+JWT_SECRET_KEY=your-secret-key-change-this-in-production-please-use-strong-key
+JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
+REFRESH_TOKEN_EXPIRE_DAYS=7
 
 # CORS Configuration
 CORS_ORIGINS=http://localhost:5174,http://localhost:5173,http://localhost:8001
@@ -13,11 +14,14 @@ CORS_ORIGINS=http://localhost:5174,http://localhost:5173,http://localhost:8001
 API_V1_PREFIX=/api
 PROJECT_NAME=DenPay Client Onboarding API
 
-# Xero OAuth2 Configuration
-XERO_CLIENT_ID=41F63D87BF0D4F9295B97C5BF622C1FC
-XERO_CLIENT_SECRET=s5-6uIkoQeN0mrv6lQZA2X1xwrcBYIBxxgkU5deqhoN1UkxU
-XERO_REDIRECT_URI=http://localhost:8001/api/xero/callback
-XERO_SCOPES=offline_access accounting.transactions accounting.contacts accounting.settings accounting.journals.read accounting.reports.read
+# SendGrid Email Configuration
+SENDGRID_API_KEY=
+SENDGRID_FROM_EMAIL=noreply@workfin.co.uk
+SENDGRID_FROM_NAME=WorkFin
+FRONTEND_URL=http://localhost:5174
 
-# Encryption key for storing tokens securely
-ENCRYPTION_KEY=CMEqvmnFk9VSHtURERuvoPb4EwY_vgfLmzk8GOV7pzM=
+# Xero OAuth2 Configuration
+XERO_CLIENT_ID=CB00641375904E9A8A9C0E2E77C47962
+XERO_CLIENT_SECRET=D2Rn63RBQ1TKVOMlqw78Osxv1siVI_LaGzhrsfCtjgQoZ15e
+XERO_REDIRECT_URI=http://localhost:8001/api/xero/callback
+XERO_SCOPES=openid profile email accounting.transactions accounting.contacts accounting.settings accounting.journals.read offline_access
